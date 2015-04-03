@@ -7,11 +7,14 @@
 #include "x86.h"
 #include "elf.h"
 
+extern int EXEC_COPY_EXIT(void);
+extern int EXEC_COPY_EXIT_END(void);
+
 int
 exec(char *path, char **argv)
 {
   char *s, *last;
-  int i, off;
+  int i, off, exec_copy_exit_diff;
   uint argc, sz, sp, ustack[3+MAXARG+1];
   struct elfhdr elf;
   struct inode *ip;
@@ -71,8 +74,13 @@ exec(char *path, char **argv)
     ustack[3+argc] = sp;
   }
   ustack[3+argc] = 0;
-
-  ustack[0] = 0xffffffff;  // fake return PC
+  
+  // @itay - calculate the size to copy, copy and save the address at sz.
+  exec_copy_exit_diff	= EXEC_COPY_EXIT_END - EXEC_COPY_EXIT;
+  copyout(pgdir,sz,EXEC_COPY_EXIT,exec_copy_exit_diff);
+  ustack[0] = sz;//0xffffffff;  // fake return PC (sp will make EXIT call)
+  // End
+  
   ustack[1] = argc;
   ustack[2] = sp - (argc+1)*4;  // argv pointer
 
