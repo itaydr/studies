@@ -24,7 +24,7 @@ main(int argc, char *argv[])
   17:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
   1e:	e8 40 04 00 00       	call   463 <printf>
     exit(EXIT_STATUS_ERR);
-  23:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+  23:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
   2a:	e8 bd 02 00 00       	call   2ec <exit>
   }
   if(link(argv[1], argv[2]) < 0)
@@ -53,7 +53,7 @@ main(int argc, char *argv[])
   6f:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
   76:	e8 e8 03 00 00       	call   463 <printf>
   exit(EXIT_STATUS_OK);
-  7b:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+  7b:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
   82:	e8 65 02 00 00       	call   2ec <exit>
   87:	90                   	nop
 

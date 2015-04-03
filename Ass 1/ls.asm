@@ -315,7 +315,7 @@ main(int argc, char *argv[])
  311:	c7 04 24 4b 0b 00 00 	movl   $0xb4b,(%esp)
  318:	e8 91 fd ff ff       	call   ae <ls>
     exit(EXIT_STATUS_OK);
- 31d:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+ 31d:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
  324:	e8 9f 02 00 00       	call   5c8 <exit>
   }
   for(i=1; i<argc; i++)
@@ -341,7 +341,7 @@ main(int argc, char *argv[])
  353:	7c de                	jl     333 <main+0x31>
     ls(argv[i]);
   exit(EXIT_STATUS_OK);
- 355:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+ 355:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
  35c:	e8 67 02 00 00       	call   5c8 <exit>
  361:	90                   	nop
  362:	90                   	nop

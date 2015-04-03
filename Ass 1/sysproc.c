@@ -18,7 +18,7 @@ sys_exit()
 {
   int status;
   argint(0, &status);
-  cprintf("enterted: sys_exit, %d\n", status);
+  //cprintf("enterted: sys_exit, %d\n", status);
   exit(status);
   return 0;  // not reached
 }
@@ -26,7 +26,9 @@ sys_exit()
 int
 sys_wait(void)
 {
-  return wait(0);
+  int* status;
+  argptr(0, (char**) &status, sizeof(int*));
+  return wait(status);
 }
 
 int

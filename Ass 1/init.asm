@@ -73,7 +73,7 @@ main(void)
   98:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   9f:	e8 63 04 00 00       	call   507 <printf>
       exit(EXIT_STATUS_ERR);
-  a4:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+  a4:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
   ab:	e8 e0 02 00 00       	call   390 <exit>
     }
     if(pid == 0){
@@ -90,7 +90,7 @@ main(void)
   d3:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   da:	e8 28 04 00 00       	call   507 <printf>
       exit(EXIT_STATUS_ERR);
-  df:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+  df:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
   e6:	e8 a5 02 00 00       	call   390 <exit>
     }
     while((wpid=wait(NULL)) >= 0 && wpid != pid)

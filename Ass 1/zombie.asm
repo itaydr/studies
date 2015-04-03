@@ -23,7 +23,7 @@ main(void)
   12:	c7 04 24 05 00 00 00 	movl   $0x5,(%esp)
   19:	e8 02 03 00 00       	call   320 <sleep>
   exit(EXIT_STATUS_OK);
-  1e:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+  1e:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
   25:	e8 66 02 00 00       	call   290 <exit>
   2a:	90                   	nop
   2b:	90                   	nop

@@ -163,7 +163,7 @@ main(int argc, char *argv[])
  1b1:	e8 7a 02 00 00       	call   430 <wait>
   
   exit(EXIT_STATUS_OK);
- 1b6:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+ 1b6:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
  1bd:	e8 66 02 00 00       	call   428 <exit>
  1c2:	90                   	nop
  1c3:	90                   	nop

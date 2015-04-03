@@ -25,8 +25,8 @@ if (!(pid = fork()))
   12:	83 7c 24 1c 00       	cmpl   $0x0,0x1c(%esp)
   17:	75 0c                	jne    25 <main+0x25>
 {
-exit(0x7f);
-  19:	c7 04 24 7f 00 00 00 	movl   $0x7f,(%esp)
+exit(123);
+  19:	c7 04 24 7b 00 00 00 	movl   $0x7b,(%esp)
   20:	e8 eb 02 00 00       	call   310 <exit>
 }
 else
@@ -52,9 +52,9 @@ printf(2, "pid = %d\n", npid);
   68:	e8 1a 04 00 00       	call   487 <printf>
   
 }
-if (status == 0x7f)
+if (status == 123)
   6d:	8b 44 24 14          	mov    0x14(%esp),%eax
-  71:	83 f8 7f             	cmp    $0x7f,%eax
+  71:	83 f8 7b             	cmp    $0x7b,%eax
   74:	75 16                	jne    8c <main+0x8c>
 {
 printf(1, "OK\n");
@@ -72,8 +72,8 @@ printf(1, "FAILED\n");
   94:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   9b:	e8 e7 03 00 00       	call   487 <printf>
 }
-exit(700);
-  a0:	c7 04 24 bc 02 00 00 	movl   $0x2bc,(%esp)
+exit(4444);
+  a0:	c7 04 24 5c 11 00 00 	movl   $0x115c,(%esp)
   a7:	e8 64 02 00 00       	call   310 <exit>
 
 000000ac <stosb>:

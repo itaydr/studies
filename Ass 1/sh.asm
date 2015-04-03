@@ -23,7 +23,7 @@ runcmd(struct cmd *cmd)
        6:	83 7d 08 00          	cmpl   $0x0,0x8(%ebp)
        a:	75 0c                	jne    18 <runcmd+0x18>
     exit(EXIT_STATUS_OK);
-       c:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+       c:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
       13:	e8 c4 0f 00 00       	call   fdc <exit>
   
   switch(cmd->type){
@@ -48,7 +48,7 @@ runcmd(struct cmd *cmd)
       43:	85 c0                	test   %eax,%eax
       45:	75 0c                	jne    53 <runcmd+0x53>
       exit(EXIT_STATUS_ERR);
-      47:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+      47:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
       4e:	e8 89 0f 00 00       	call   fdc <exit>
     exec(ecmd->argv[0], ecmd->argv);
       53:	8b 45 f4             	mov    -0xc(%ebp),%eax
@@ -97,7 +97,7 @@ runcmd(struct cmd *cmd)
       d0:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
       d7:	e8 77 10 00 00       	call   1153 <printf>
       exit(EXIT_STATUS_ERR);
-      dc:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+      dc:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
       e3:	e8 f4 0e 00 00       	call   fdc <exit>
     }
     runcmd(rcmd->cmd);
@@ -240,7 +240,7 @@ runcmd(struct cmd *cmd)
      23a:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
      241:	e8 0d 0f 00 00       	call   1153 <printf>
   exit(EXIT_STATUS_OK);
-     246:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+     246:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
      24d:	e8 8a 0d 00 00       	call   fdc <exit>
 
 00000252 <getcmd>:
@@ -415,7 +415,7 @@ main(void)
     printf(2, "Program exited with %d\n", status);
   }
   exit(EXIT_STATUS_OK);
-     3c1:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+     3c1:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
      3c8:	e8 0f 0c 00 00       	call   fdc <exit>
 
 000003cd <panic>:
@@ -435,7 +435,7 @@ panic(char *s)
      3e2:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
      3e9:	e8 65 0d 00 00       	call   1153 <printf>
   exit(EXIT_STATUS_ERR);
-     3ee:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+     3ee:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
      3f5:	e8 e2 0b 00 00       	call   fdc <exit>
 
 000003fa <fork1>:

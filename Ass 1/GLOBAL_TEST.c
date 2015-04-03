@@ -10,7 +10,7 @@ int npid;
 
 if (!(pid = fork()))
 {
-exit(0x7f);
+exit(123);
 }
 else
 {
@@ -19,7 +19,7 @@ printf(2, "status = %d\n", status);
 printf(2, "pid = %d\n", npid);
   
 }
-if (status == 0x7f)
+if (status == 123)
 {
 printf(1, "OK\n");
 }
@@ -27,5 +27,5 @@ else
 {
 printf(1, "FAILED\n");
 }
-exit(700);
+exit(4444);
 }

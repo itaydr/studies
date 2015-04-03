@@ -58,7 +58,7 @@ forktest(void)
   5a:	83 7d f0 00          	cmpl   $0x0,-0x10(%ebp)
   5e:	75 0c                	jne    6c <forktest+0x43>
       exit(EXIT_STATUS_OK);
-  60:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+  60:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
   67:	e8 40 03 00 00       	call   3ac <exit>
 {
   int n, pid;
@@ -89,7 +89,7 @@ forktest(void)
   95:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   9c:	e8 5f ff ff ff       	call   0 <printf>
     exit(EXIT_STATUS_OK);
-  a1:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+  a1:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
   a8:	e8 ff 02 00 00       	call   3ac <exit>
   }
   
@@ -105,7 +105,7 @@ forktest(void)
   c5:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   cc:	e8 2f ff ff ff       	call   0 <printf>
       exit(EXIT_STATUS_ERR);
-  d1:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+  d1:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
   d8:	e8 cf 02 00 00       	call   3ac <exit>
   if(n == N){
     printf(1, "fork claimed to work N times!\n", N);
@@ -132,7 +132,7 @@ forktest(void)
  100:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
  107:	e8 f4 fe ff ff       	call   0 <printf>
     exit(EXIT_STATUS_ERR);
- 10c:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+ 10c:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
  113:	e8 94 02 00 00       	call   3ac <exit>
   }
   
@@ -157,7 +157,7 @@ main(void)
   forktest();
  137:	e8 ed fe ff ff       	call   29 <forktest>
   exit(EXIT_STATUS_OK);
- 13c:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+ 13c:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
  143:	e8 64 02 00 00       	call   3ac <exit>
 
 00000148 <stosb>:

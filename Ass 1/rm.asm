@@ -26,7 +26,7 @@ main(int argc, char *argv[])
   17:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
   1e:	e8 4c 04 00 00       	call   46f <printf>
     exit(EXIT_STATUS_ERR);
-  23:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+  23:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
   2a:	e8 c9 02 00 00       	call   2f8 <exit>
   }
 
@@ -71,7 +71,7 @@ main(int argc, char *argv[])
   }
 
   exit(EXIT_STATUS_OK);
-  85:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+  85:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
   8c:	e8 67 02 00 00       	call   2f8 <exit>
   91:	90                   	nop
   92:	90                   	nop

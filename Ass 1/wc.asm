@@ -100,7 +100,7 @@ wc(int fd, char *name)
   c0:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   c7:	e8 f3 04 00 00       	call   5bf <printf>
     exit(EXIT_STATUS_ERR);
-  cc:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+  cc:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
   d3:	e8 70 03 00 00       	call   448 <exit>
   }
   printf(1, "%d %d %d %s\n", l, w, c, name);
@@ -140,7 +140,7 @@ main(int argc, char *argv[])
  121:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
  128:	e8 d3 fe ff ff       	call   0 <wc>
     exit(EXIT_STATUS_OK);
- 12d:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+ 12d:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
  134:	e8 0f 03 00 00       	call   448 <exit>
   }
 
@@ -171,7 +171,7 @@ main(int argc, char *argv[])
  185:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
  18c:	e8 2e 04 00 00       	call   5bf <printf>
       exit(EXIT_STATUS_ERR);
- 191:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+ 191:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
  198:	e8 ab 02 00 00       	call   448 <exit>
     }
     wc(fd, argv[i]);
@@ -203,7 +203,7 @@ main(int argc, char *argv[])
     close(fd);
   }
   exit(EXIT_STATUS_OK);
- 1d7:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+ 1d7:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
  1de:	e8 65 02 00 00       	call   448 <exit>
  1e3:	90                   	nop
 

@@ -152,7 +152,7 @@ main(int argc, char *argv[])
  121:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
  128:	e8 1e 06 00 00       	call   74b <printf>
     exit(EXIT_STATUS_ERR);
- 12d:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+ 12d:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
  134:	e8 9b 04 00 00       	call   5d4 <exit>
   }
   pattern = argv[1];
@@ -170,7 +170,7 @@ main(int argc, char *argv[])
  155:	89 04 24             	mov    %eax,(%esp)
  158:	e8 a3 fe ff ff       	call   0 <grep>
     exit(EXIT_STATUS_OK);
- 15d:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+ 15d:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
  164:	e8 6b 04 00 00       	call   5d4 <exit>
   }
 
@@ -201,7 +201,7 @@ main(int argc, char *argv[])
  1b2:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
  1b9:	e8 8d 05 00 00       	call   74b <printf>
       exit(EXIT_STATUS_ERR);
- 1be:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+ 1be:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
  1c5:	e8 0a 04 00 00       	call   5d4 <exit>
     }
     grep(pattern, fd);
@@ -230,7 +230,7 @@ main(int argc, char *argv[])
     close(fd);
   }
   exit(EXIT_STATUS_OK);
- 1fc:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+ 1fc:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
  203:	e8 cc 03 00 00       	call   5d4 <exit>
 
 00000208 <match>:

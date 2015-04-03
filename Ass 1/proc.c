@@ -172,7 +172,7 @@ fork(void)
 void
 exit(int status)
 {
-  cprintf("enterted: exit\n");
+  //cprintf("enterted: exit, %d\n", status);
   struct proc *p;
   int fd;
   
@@ -186,6 +186,8 @@ exit(int status)
       proc->ofile[fd] = 0;
     }
   }
+  
+  proc->exitStatus = status;
 
   begin_op();
   iput(proc->cwd);
@@ -205,8 +207,6 @@ exit(int status)
         wakeup1(initproc);
     }
   }
-  
-  p->exitStatus = status;
 
   // Jump into the scheduler, never to return.
   proc->state = ZOMBIE;
@@ -233,6 +233,13 @@ wait(int *status)
       if(p->state == ZOMBIE){
         // Found one.
         pid = p->pid;
+	
+	if (status != NULL) {
+	   *status = p->exitStatus;
+	} else {
+	  *status = -2;
+	}
+	
         kfree(p->kstack);
         p->kstack = 0;
         freevm(p->pgdir);
@@ -242,10 +249,6 @@ wait(int *status)
         p->name[0] = 0;
         p->killed = 0;
         release(&ptable.lock);
-	if (status != NULL) {
-	    *status = p->exitStatus;
-	}
-	
 	
         return pid;
       }

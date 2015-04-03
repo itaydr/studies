@@ -26,7 +26,7 @@ main(int argc, char **argv)
   17:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
   1e:	e8 28 04 00 00       	call   44b <printf>
     exit(EXIT_STATUS_ERR);
-  23:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+  23:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
   2a:	e8 a5 02 00 00       	call   2d4 <exit>
   }
   for(i=1; i<argc; i++)
@@ -54,7 +54,7 @@ main(int argc, char **argv)
   61:	7c d6                	jl     39 <main+0x39>
     kill(atoi(argv[i]));
   exit(EXIT_STATUS_OK);
-  63:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+  63:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
   6a:	e8 65 02 00 00       	call   2d4 <exit>
   6f:	90                   	nop
 

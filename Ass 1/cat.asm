@@ -51,7 +51,7 @@ cat(int fd)
   55:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   5c:	e8 a6 04 00 00       	call   507 <printf>
     exit(EXIT_STATUS_ERR);
-  61:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+  61:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
   68:	e8 23 03 00 00       	call   390 <exit>
   }
 }
@@ -76,7 +76,7 @@ main(int argc, char *argv[])
   7e:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
   85:	e8 76 ff ff ff       	call   0 <cat>
     exit(EXIT_STATUS_ERR);
-  8a:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+  8a:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
   91:	e8 fa 02 00 00       	call   390 <exit>
   }
 
@@ -107,7 +107,7 @@ main(int argc, char *argv[])
   df:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   e6:	e8 1c 04 00 00       	call   507 <printf>
       exit(EXIT_STATUS_ERR);
-  eb:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
+  eb:	c7 04 24 4d 01 00 00 	movl   $0x14d,(%esp)
   f2:	e8 99 02 00 00       	call   390 <exit>
     }
     cat(fd);
@@ -134,7 +134,7 @@ main(int argc, char *argv[])
     close(fd);
   }
   exit(EXIT_STATUS_OK);
- 11d:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+ 11d:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
  124:	e8 67 02 00 00       	call   390 <exit>
  129:	90                   	nop
  12a:	90                   	nop

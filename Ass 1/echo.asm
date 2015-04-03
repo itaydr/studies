@@ -51,7 +51,7 @@ main(int argc, char *argv[])
   5f:	7c b2                	jl     13 <main+0x13>
     printf(1, "%s%s", argv[i], i+1 < argc ? " " : "\n");
   exit(EXIT_STATUS_OK);
-  61:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+  61:	c7 04 24 6f 00 00 00 	movl   $0x6f,(%esp)
   68:	e8 67 02 00 00       	call   2d4 <exit>
   6d:	90                   	nop
   6e:	90                   	nop
