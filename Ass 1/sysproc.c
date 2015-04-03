@@ -14,8 +14,11 @@ sys_fork(void)
 }
 
 int
-sys_exit(int status)
+sys_exit()
 {
+  int status;
+  argint(0, &status);
+  cprintf("enterted: sys_exit, %d\n", status);
   exit(status);
   return 0;  // not reached
 }

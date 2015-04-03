@@ -72,8 +72,8 @@ printf(1, "FAILED\n");
   94:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   9b:	e8 e7 03 00 00       	call   487 <printf>
 }
-exit(0);
-  a0:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
+exit(700);
+  a0:	c7 04 24 bc 02 00 00 	movl   $0x2bc,(%esp)
   a7:	e8 64 02 00 00       	call   310 <exit>
 
 000000ac <stosb>:
