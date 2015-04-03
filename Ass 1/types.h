@@ -12,3 +12,6 @@ typedef uint pde_t;
 #ifndef NULL
 #define NULL			0
 #endif 
+
+#define BLOCKING 	100
+#define NON_BLOCKING 	101

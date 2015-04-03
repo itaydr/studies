@@ -10,11 +10,14 @@ int npid;
 
 if (!(pid = fork()))
 {
-exit(123);
+  printf(2, "getting into sleep\n");
+  sleep(500);
+  printf(2, "getting out from sleep\n");
+  exit(123);
 }
 else
 {
-npid =  wait(&status);
+npid =  waitpid(pid, &status, NON_BLOCKING);
 printf(2, "status = %d\n", status);
 printf(2, "pid = %d\n", npid);
   

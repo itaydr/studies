@@ -265,6 +265,66 @@ wait(int *status)
   }
 }
 
+// if BLOCKING - Wait for a process with id: pid to exit and return its status.
+// if BLOCKING - return its status or -1.
+// Return -1 if this process has no children.
+int 
+waitpid(int pid, int *status, int options)
+{
+  struct proc *p;
+  int is_exists = 0;
+
+  acquire(&ptable.lock);
+  for(;;){
+    // Scan through table looking for zombie children.
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if (p-> pid == pid) {
+	is_exists = 1;
+	
+	if(p->state == ZOMBIE){
+	  // Found one.
+	  pid = p->pid;
+	
+	  if (status != NULL) {
+	    *status = p->exitStatus;
+	  } else {
+	    *status = -2;
+	  }
+	  
+	  kfree(p->kstack);
+	  p->kstack = 0;
+	  freevm(p->pgdir);
+	  p->state = UNUSED;
+	  p->pid = 0;
+	  p->parent = 0;
+	  p->name[0] = 0;
+	  p->killed = 0;
+	  release(&ptable.lock);
+	  
+	  return pid;
+	}
+	
+	if (options == NON_BLOCKING) {
+	  release(&ptable.lock);
+	  return -1;
+	}
+      }
+      
+      
+    }
+
+    // No point waiting if we don't have any children.
+    if(!is_exists || proc->killed){
+      release(&ptable.lock);
+      return -1;
+    }
+
+    // Wait for children to exit.  (See wakeup1 call in proc_exit.)
+    sleep(proc, &ptable.lock);  //DOC: wait-sleep
+  }
+}
+
+
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
