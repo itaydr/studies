@@ -29,6 +29,7 @@ int nextjid = 1;
 extern void forkret(void);
 extern void trapret(void);
 
+int cleanJobIfNeeded(void);
 static void wakeup1(void *chan);
 
 void
@@ -89,11 +90,15 @@ static struct job*
 allocjob(void)
 {
   struct job *j;
-  
+  int index = 0;
   acquire(&jtable.lock);
-  for(j = jtable.jobs; j < &jtable.jobs[NPROC]; j++)
-    if(j->state == JOB_S_UNUSED)
+  for(j = jtable.jobs; j < &jtable.jobs[NPROC]; j++) {
+    if(j->state == JOB_S_UNUSED) {
+      cprintf("Found empty job at index - %d\n", index);
       goto found;
+    }
+    index++;
+  }
   release(&jtable.lock);
   return 0;
 
@@ -154,18 +159,23 @@ growproc(int n)
   return 0;
 }
 
-int
+struct job*
 createJob(char *command) {
   struct job *nj;
+  char *last, *s;
     
   // Allocate job.
-  if((nj = allocjob()) == 0)
-    return -1;
+  if((nj = allocjob()) == NULL)
+    return NULL;
   
-  proc->job = nj;
-  proc->job->commandName = command;
   
-  return nj->jid;
+  for(last=s=command; *s; s++)
+    if(*s == '/')
+      last = s+1;
+  
+  safestrcpy(nj->commandName, last, sizeof(nj->commandName));
+  
+  return nj;
 }
 
 // Create a new process copying p as the parent.
@@ -225,6 +235,7 @@ forkjob(char *command)
 {
   int i, pid;
   struct proc *np;
+  struct job *nj;
 
   // Allocate process.
   if((np = allocproc()) == 0)
@@ -239,11 +250,11 @@ forkjob(char *command)
   }
   
   // Create a new job.
-  if (createJob(command) < 0) {
+  if ((nj = createJob(command)) == NULL) {
     panic("Failed creating a job");
   }
-
   
+  np->job = nj;
   np->sz = proc->sz;
   np->parent = proc;
   *np->tf = *proc->tf;
@@ -290,6 +301,7 @@ exit(int status)
   }
   
   proc->exitStatus = status;
+  cleanJobIfNeeded();
 
   begin_op();
   iput(proc->cwd);
@@ -350,6 +362,7 @@ wait(int *status)
         p->parent = 0;
         p->name[0] = 0;
         p->killed = 0;
+	p->job = 0;
         release(&ptable.lock);
 	
         return pid;
@@ -401,6 +414,7 @@ waitpid(int pid, int *status, int options)
 	  p->parent = 0;
 	  p->name[0] = 0;
 	  p->killed = 0;
+	  p->job = 0;
 	  release(&ptable.lock);
 	  
 	  return pid;
@@ -426,6 +440,29 @@ waitpid(int pid, int *status, int options)
   }
 }
 
+
+int cleanJobIfNeeded(void) {
+   int jid = proc->job->jid;
+   struct proc *p;
+   struct job *j;
+   
+    for (p = ptable.proc ; p < &ptable.proc[NPROC] ; p++ ) {
+	if (p->pid != proc->pid &&  // If it's not the current process
+	    p->job->jid == jid &&   // Current process and p share the sam job.
+	    p->state != UNUSED) {   // p is still alive.
+	 
+	   return 0;
+	}
+    }
+    
+   // If we reached here we need to kill the job.
+   j = proc->job;
+   j->jid = 0;
+   j->state = JOB_S_UNUSED;
+   j->commandName[0] = NULL;
+   
+   return 1;
+}
 
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
@@ -635,4 +672,35 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+int jobs() {
+  
+  struct job *j;
+  struct proc *p;
+  int foundJobs = FALSE, isJobAlive = FALSE, liveJobIndex = 0;
+    
+  for (j = jtable.jobs ; j < &jtable.jobs[NPROC] ; j++ ) {
+    isJobAlive = 0;
+    for (p = ptable.proc ; p < &ptable.proc[NPROC] ; p++ ) {
+      if (p->job->jid == j->jid && 				// If the process belongs to the job.
+	  p->state != UNUSED					// If the process is alive.
+	 ) {		
+	if (isJobAlive == FALSE) {
+	    cprintf("Job %d: %s \n", ++liveJobIndex, j->commandName);
+	}
+	
+	cprintf("%d: %s\n", p->pid, p->name);
+	
+	isJobAlive = TRUE;
+        foundJobs = TRUE;
+      }
+    }
+   }
+  
+  if (foundJobs == FALSE) {
+    cprintf("There are no Jobs\n");
+  }
+    
+  return 1;
 }

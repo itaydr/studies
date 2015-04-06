@@ -120,3 +120,8 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int sys_jobs(void) {
+  jobs();
+   return 3;
+}

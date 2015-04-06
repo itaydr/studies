@@ -57,6 +57,7 @@ struct backcmd {
 int fork1(void);  // Fork but panics on failure.
 int fork1CreateJob(char *command);  // Fork but panics on failure - and creates a job.
 void panic(char*);
+int checkSpecialCommands(char buf[100]);
 struct cmd *parsecmd(char*);
 
 // Execute cmd.  Never returns.
@@ -165,24 +166,38 @@ main(void)
   }
   
   // Read and run input commands.
-  while(getcmd(buf, sizeof(buf)) >= 0){
-    if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
-      // Clumsy but will have to do for now.
-      // Chdir has no effect on the parent if run in the child.
-      buf[strlen(buf)-1] = 0;  // chop \n
-      if(chdir(buf+3) < 0)
-        printf(2, "cannot cd %s\n", buf+3);
+  while(getcmd(buf, sizeof(buf)) >= 0){    
+    if (checkSpecialCommands(buf) > 0) {
       continue;
     }
+    
     if(fork1CreateJob(buf) == 0) {
       runcmd(parsecmd(buf));
     }
     int status;
     wait(&status);
     
-    printf(2, "Program exited with %d\n", status);
+    //printf(2, "Program exited with %d\n", status);
   }
   exit(EXIT_STATUS_OK);
+}
+
+int 
+checkSpecialCommands(char buf[100]) {
+    if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
+      // Clumsy but will have to do for now.
+      // Chdir has no effect on the parent if run in the child.
+      buf[strlen(buf)-1] = 0;  // chop \n
+      if(chdir(buf+3) < 0)
+        printf(2, "cannot cd %s\n", buf+3);
+      return 1;
+    }
+    else if (buf[0] == 'j' && buf[1] == 'o' && buf[2] == 'b'  && buf[3] == 's') {
+      jobs();
+      return 1;
+    }
+    
+    return 0;
 }
 
 void

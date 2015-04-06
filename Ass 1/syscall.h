@@ -23,3 +23,4 @@
 #define SYS_waitpid 22
 // Forks, and creates a new job.
 #define SYS_forkjob 23 
+#define SYS_jobs   24

@@ -13,3 +13,6 @@ typedef uint pde_t;
 
 #define BLOCKING 	100
 #define NON_BLOCKING 	101
+
+#define TRUE 		1
+#define FALSE 		0
