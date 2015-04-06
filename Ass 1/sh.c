@@ -4,6 +4,11 @@
 #include "user.h"
 #include "fcntl.h"
 
+// @itay - Added to use proc here.
+//#include "param.h"
+//#include "mmu.h"
+//#include "proc.h"
+
 // Parsed command representation
 #define EXEC  1
 #define REDIR 2
@@ -50,6 +55,7 @@ struct backcmd {
 };
 
 int fork1(void);  // Fork but panics on failure.
+int fork1CreateJob(char *command);  // Fork but panics on failure - and creates a job.
 void panic(char*);
 struct cmd *parsecmd(char*);
 
@@ -168,8 +174,9 @@ main(void)
         printf(2, "cannot cd %s\n", buf+3);
       continue;
     }
-    if(fork1() == 0)
+    if(fork1CreateJob(buf) == 0) {
       runcmd(parsecmd(buf));
+    }
     int status;
     wait(&status);
     
@@ -186,11 +193,23 @@ panic(char *s)
 }
 
 int
-fork1(void)
+fork1()
 {
   int pid;
   
   pid = fork();
+  if(pid == -1)
+    panic("fork");
+  return pid;
+}
+
+
+int
+fork1CreateJob(char *commandName)
+{
+  int pid;
+  
+  pid = forkjob(commandName);
   if(pid == -1)
     panic("fork");
   return pid;

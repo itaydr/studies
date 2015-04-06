@@ -7,14 +7,25 @@
 #include "proc.h"
 #include "spinlock.h"
 
+#define SHELL_ID	2
+
+// Processes table
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
 } ptable;
 
+
+// Jobs table
+struct {
+  struct spinlock lock;
+  struct job jobs[NPROC];
+} jtable;
+
 static struct proc *initproc;
 
 int nextpid = 1;
+int nextjid = 1;
 extern void forkret(void);
 extern void trapret(void);
 
@@ -24,6 +35,7 @@ void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
+  initlock(&jtable.lock, "jtable");
 }
 
 //PAGEBREAK: 32
@@ -71,6 +83,26 @@ found:
   p->context->eip = (uint)forkret;
 
   return p;
+}
+
+static struct job*
+allocjob(void)
+{
+  struct job *j;
+  
+  acquire(&jtable.lock);
+  for(j = jtable.jobs; j < &jtable.jobs[NPROC]; j++)
+    if(j->state == JOB_S_UNUSED)
+      goto found;
+  release(&jtable.lock);
+  return 0;
+
+found:
+  j->state = JOB_S_EMBRYO;
+  j->jid = nextjid++;
+  release(&jtable.lock);
+  
+  return j;
 }
 
 //PAGEBREAK: 32
@@ -122,6 +154,20 @@ growproc(int n)
   return 0;
 }
 
+int
+createJob(char *command) {
+  struct job *nj;
+    
+  // Allocate job.
+  if((nj = allocjob()) == 0)
+    return -1;
+  
+  proc->job = nj;
+  proc->job->commandName = command;
+  
+  return nj->jid;
+}
+
 // Create a new process copying p as the parent.
 // Sets up stack to return as if from system call.
 // Caller must set state of returned proc to RUNNABLE.
@@ -134,7 +180,7 @@ fork(void)
   // Allocate process.
   if((np = allocproc()) == 0)
     return -1;
-
+  
   // Copy process state from p.
   if((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0){
     kfree(np->kstack);
@@ -142,10 +188,17 @@ fork(void)
     np->state = UNUSED;
     return -1;
   }
+  
+  if (proc->job == NULL && proc->pid >= SHELL_ID) {
+      cprintf("Error - Forking new process from a process which don't have a job!.\n");
+  }
+  
+  np->job = proc->job;
+    
   np->sz = proc->sz;
   np->parent = proc;
   *np->tf = *proc->tf;
-
+  
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
 
@@ -155,7 +208,56 @@ fork(void)
   np->cwd = idup(proc->cwd);
 
   safestrcpy(np->name, proc->name, sizeof(proc->name));
- 
+
+  pid = np->pid;
+
+  // lock to force the compiler to emit the np->state write last.
+  acquire(&ptable.lock);
+  np->state = RUNNABLE;
+  release(&ptable.lock);
+  
+  return pid;
+}
+
+// Same as fork, but creates a new job.
+int
+forkjob(char *command)
+{
+  int i, pid;
+  struct proc *np;
+
+  // Allocate process.
+  if((np = allocproc()) == 0)
+    return -1;
+  
+  // Copy process state from p.
+  if((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0){
+    kfree(np->kstack);
+    np->kstack = 0;
+    np->state = UNUSED;
+    return -1;
+  }
+  
+  // Create a new job.
+  if (createJob(command) < 0) {
+    panic("Failed creating a job");
+  }
+
+  
+  np->sz = proc->sz;
+  np->parent = proc;
+  *np->tf = *proc->tf;
+  
+  // Clear %eax so that fork returns 0 in the child.
+  np->tf->eax = 0;
+
+  for(i = 0; i < NOFILE; i++)
+    if(proc->ofile[i])
+      np->ofile[i] = filedup(proc->ofile[i]);
+  np->cwd = idup(proc->cwd);
+
+  safestrcpy(np->name, proc->name, sizeof(proc->name));
+
   pid = np->pid;
 
   // lock to force the compiler to emit the np->state write last.

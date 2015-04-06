@@ -14,6 +14,15 @@ sys_fork(void)
 }
 
 int
+sys_forkjob(void)
+{
+  char* command;
+  argptr(0, (char**) &command, sizeof(char*));
+  
+  return forkjob(command);
+}
+
+int
 sys_exit()
 {
   int status;

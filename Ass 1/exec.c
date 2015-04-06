@@ -75,12 +75,19 @@ exec(char *path, char **argv)
   }
   ustack[3+argc] = 0;
   
+  
   // @itay - calculate the size to copy, copy and save the address at sz.
   exec_copy_exit_diff	= EXEC_COPY_EXIT_END - EXEC_COPY_EXIT;
-  copyout(pgdir,sz,EXEC_COPY_EXIT,exec_copy_exit_diff);
-  ustack[0] = sz;//0xffffffff;  // fake return PC (sp will make EXIT call)
+  sp = ( sp - exec_copy_exit_diff );// & ~3;
+  copyout(pgdir,sp,EXEC_COPY_EXIT,exec_copy_exit_diff);
+  ustack[0] = sp;//0xffffffff;  // fake return PC (sp will make EXIT call)
   // End
   
+//  cprintf(2, "we wanna junp to: %d ", sp);
+//  for ( i = 0 ; i < 8 ; ++i) {
+//    cprintf(2, " i:    %d  \n", i, ustack[i]);
+//  }
+   
   ustack[1] = argc;
   ustack[2] = sp - (argc+1)*4;  // argv pointer
 
@@ -93,7 +100,7 @@ exec(char *path, char **argv)
     if(*s == '/')
       last = s+1;
   safestrcpy(proc->name, last, sizeof(proc->name));
-
+ 
   // Commit to the user image.
   oldpgdir = proc->pgdir;
   proc->pgdir = pgdir;

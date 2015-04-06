@@ -1,3 +1,5 @@
+#include "job.h"
+
 // Segments in proc->gdt.
 #define NSEGS     7
 
@@ -69,6 +71,7 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   int exitStatus;
+  struct job *job;
 };
 
 // Process memory is laid out contiguously, low addresses first:

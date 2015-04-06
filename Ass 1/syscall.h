@@ -21,3 +21,5 @@
 #define SYS_mkdir  20
 #define SYS_close  21
 #define SYS_waitpid 22
+// Forks, and creates a new job.
+#define SYS_forkjob 23 
