@@ -99,7 +99,6 @@ allocjob(void)
   acquire(&jtable.lock);
   for(j = jtable.jobs; j < &jtable.jobs[NPROC]; j++) {
     if(j->state == JOB_S_UNUSED) {
-      cprintf("Found empty job at index - %d\n", index);
       goto found;
     }
     index++;
@@ -336,7 +335,8 @@ exit(int status)
 
   // Parent might be sleeping in wait().
   wakeup1(proc->parent);
-
+  wakeup1(proc);
+  
   // Pass abandoned children to init.
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->parent == proc){
@@ -433,7 +433,7 @@ int shared_wait(int *status ,int *wtime, int *rtime, int *iotime) {
 int 
 waitpid(int pid, int *status, int options)
 {
-  struct proc *p;
+  struct proc *p, *foundProc;
   int is_exists = 0;
 
   acquire(&ptable.lock);
@@ -442,7 +442,7 @@ waitpid(int pid, int *status, int options)
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if (p-> pid == pid) {
 	is_exists = 1;
-	
+	foundProc = p;
 	if(p->state == ZOMBIE){
 	  // Found one.
 	  pid = p->pid;
@@ -477,8 +477,6 @@ waitpid(int pid, int *status, int options)
 	  return -1;
 	}
       }
-      
-      
     }
 
     // No point waiting if we don't have any children.
@@ -488,7 +486,8 @@ waitpid(int pid, int *status, int options)
     }
 
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
-    sleep(proc, &ptable.lock);  //DOC: wait-sleep
+    sleep(foundProc, &ptable.lock);  //DOC: wait-sleep
+    foundProc = NULL;is_exists = FALSE;
   }
 }
 
@@ -770,7 +769,6 @@ int fg(int jid) {
    for (j = jtable.jobs ; j < &jtable.jobs[NPROC] ; j++ )  {
      if (j->state != JOB_S_UNUSED && proc->job->jid != j->jid) {
        jid = j->state; 
-       cprintf("Using job with id - %d\n", jid);
        break;
      }
    }
@@ -779,7 +777,6 @@ int fg(int jid) {
   for (p = ptable.proc ; p < &ptable.proc[NPROC] ; p++ )  {
     if (p->job->jid == jid) {
       jobExists = TRUE;
-      cprintf("FG is waiting on process - %d\n", p->pid);
       waitpid(p->pid, NULL, BLOCKING);
     }
   }
@@ -788,8 +785,6 @@ int fg(int jid) {
    cprintf("Could'nt find job - %d\n", jid); 
   }
   
-  cprintf("FG exit\n"); 
- 
  return 1; 
 }
 

@@ -136,7 +136,6 @@ runcmd(struct cmd *cmd)
     break;
   }
   
-  printf(2, "Process completed with status - %d\n", status);
   exit(EXIT_STATUS_OK);
 }
 
