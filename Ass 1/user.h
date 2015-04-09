@@ -27,6 +27,7 @@ int sleep(int);
 int uptime(void);
 int jobs(void);
 int fg(int jid);
+int wait_stat(int *wtime, int *rtime, int *iotime);
 
 // ulib.c
 int stat(char*, struct stat*);

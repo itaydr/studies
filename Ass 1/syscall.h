@@ -25,3 +25,4 @@
 #define SYS_forkjob 23 
 #define SYS_jobs   24
 #define SYS_fg     25
+#define SYS_wait_stat 26

@@ -1,33 +1,66 @@
 #include "types.h"
 #include "user.h"
 
+void print_nonsense(void){
+
+  printf(1, "a\n");
+}
+
+int
+main(int argc, char *argv[])
+{
+	int wtime, rtime, iotime;
+	int i;							//uncomment to check runnning time (1)
+	if(fork() == 0){
+		for(i=0; i<=5000; i++)		//uncomment to check runnning time (2)
+			i=i;//print_nonsense();			//uncomment to check runnning time (3)
+		//char buf[3];					//uncomment to check sleeping time (1)
+		//printf(1, "Enter a sole char (any char) and press enter: (the longer you wait, the bigger sleeping time will be)\n");		//uncomment to check sleeping time (2)
+		//read(0, buf, 3);				//uncomment to check sleeping time (3)
+		exit(0);
+    }
+	wait_stat(&wtime, &rtime, &iotime);
+	printf(2, "ready (runnable) time is: %d\n", wtime);
+	printf(2, "running time is: %d\n", rtime);
+	printf(2, "sleeping (waiting for io) time is: %d\n", iotime);
+	exit(0);
+}
+
+/*
+
+#include "types.h"
+#include "user.h"
+
 int
 main(int argc, char *argv[])
 {
 int pid;
-int status;
-int npid;
+int w,r,io;
+int npid = 0;
+npid = npid;
 
 if (!(pid = fork()))
 {
+  printf(1, "intermediate child\n");
+  if (!(pid = fork())) {
+    printf(1,"child getting to sleep 500\n");
+    sleep(500); 
+    printf(1,"child getting out from sleep 500, exit (123)\n");
+  } else {
+    printf(1, "intermediate child is going to die\n");
+  }
+
   
-  sleep(1000); 
   exit(123);
 }
 else
 {
-npid =  waitpid(pid, &status, NON_BLOCKING);
-printf(2, "status = %d\n", status);
-printf(2, "pid = %d\n", npid);
   
-}
-if (status == 123)
-{
-printf(1, "OK\n");
-}
-else
-{
-printf(1, "FAILED\n");
+   printf(1, "parent waiting for child %d\n", pid);
+   wait_stat(&w,&r,&io);
+   printf(1, "Stats: w:%d r:%d io:%d\n", w,r,io);
 }
 exit(4444);
 }
+
+*/

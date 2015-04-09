@@ -122,6 +122,8 @@ void            wakeup(void*);
 void            yield(void);
 int 		jobs();
 int             fg(int jid);
+void 		update_counters();
+int 		wait_stat(int *wtime, int *rtime, int *iotime);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

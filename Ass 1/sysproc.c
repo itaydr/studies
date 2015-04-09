@@ -52,7 +52,7 @@ sys_waitpid(void)
   argptr(1, (char**) &status, sizeof(int*));
   argint(2, &options);
   
-  cprintf("pid = %d, status = %d, options = %d\n", pid, status, options );
+  cprintf("inside sys_waitpid => waiting for pid = %d, options = %d\n", pid, options );
   
   return waitpid(pid, status, options);
 }
@@ -131,6 +131,19 @@ int sys_fg(void) {
   int jid;
   argint(0, &jid);
   fg(jid);
+  
+  return 1;
+}
+
+int sys_wait_stat(void) {
+ 
+  int *wtime, *rtime, *iotime;
+  
+  argptr(0, (char**) &wtime, sizeof(int*));
+  argptr(1, (char**) &rtime, sizeof(int*));
+  argptr(2, (char**) &iotime, sizeof(int*));
+  
+  wait_stat(wtime, rtime, iotime);
   
   return 1;
 }

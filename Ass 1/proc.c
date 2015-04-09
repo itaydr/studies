@@ -9,6 +9,11 @@
 
 #define SHELL_ID	2
 
+//------- helper funcs -----------
+int get_current_ticks(void);
+void update_counters();
+int shared_wait(int *status ,int *wtime, int *rtime, int *iotime);
+
 // Processes table
 struct {
   struct spinlock lock;
@@ -224,6 +229,14 @@ fork(void)
   // lock to force the compiler to emit the np->state write last.
   acquire(&ptable.lock);
   np->state = RUNNABLE;
+  
+  // set initial creation time
+  np->stime	 = 0;
+  np->retime 	 = 0;
+  np->rutime 	 = 0;
+  np->ctime = get_current_ticks();
+  
+  
   release(&ptable.lock);
   
   return pid;
@@ -274,6 +287,13 @@ forkjob(char *command)
   // lock to force the compiler to emit the np->state write last.
   acquire(&ptable.lock);
   np->state = RUNNABLE;
+  
+  // initial creation time
+  np->stime	 = 0;
+  np->retime 	 = 0;
+  np->rutime 	 = 0;
+  np->ctime = get_current_ticks();
+  
   release(&ptable.lock);
   
   return pid;
@@ -288,6 +308,10 @@ exit(int status)
   //cprintf("enterted: exit, %d\n", status);
   struct proc *p;
   int fd;
+  
+  // set termination time
+  proc->ttime = get_current_ticks();
+  
   
   if(proc == initproc)
     panic("init exiting");
@@ -333,6 +357,16 @@ exit(int status)
 int
 wait(int *status)
 {
+  return shared_wait(status, NULL, NULL, NULL);
+}
+
+int wait_stat(int *wtime, int *rtime, int *iotime) {
+  return shared_wait(NULL, wtime, rtime, iotime); 
+}
+
+
+int shared_wait(int *status ,int *wtime, int *rtime, int *iotime) {
+
   struct proc *p;
   int havekids, pid;
 
@@ -354,6 +388,13 @@ wait(int *status)
 	  *status = -2;
 	}
 	
+	if (wtime != NULL)
+	  *wtime = proc->retime;
+	if (rtime != NULL)
+	  *rtime = proc->rutime;
+	if (iotime != NULL)
+	  *iotime = proc->stime;
+	
         kfree(p->kstack);
         p->kstack = 0;
         freevm(p->pgdir);
@@ -363,6 +404,11 @@ wait(int *status)
         p->name[0] = 0;
         p->killed = 0;
 	p->job = 0;
+	p->ctime = 0;
+	p->ttime = 0;
+	p->retime = 0;
+	p->rutime = 0;
+	p->stime = 0;
         release(&ptable.lock);
 	
         return pid;
@@ -377,8 +423,9 @@ wait(int *status)
 
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(proc, &ptable.lock);  //DOC: wait-sleep
-  }
+  }  
 }
+
 
 // if BLOCKING - Wait for a process with id: pid to exit and return its status.
 // if BLOCKING - return its status or -1.
@@ -415,6 +462,11 @@ waitpid(int pid, int *status, int options)
 	  p->name[0] = 0;
 	  p->killed = 0;
 	  p->job = 0;
+	  p->ctime = 0;
+	  p->ttime = 0;
+	  p->retime = 0;
+	  p->rutime = 0;
+	  p->stime = 0;
 	  release(&ptable.lock);
 	  
 	  return pid;
@@ -487,6 +539,9 @@ scheduler(void)
       if(p->state != RUNNABLE)
         continue;
 
+      // update counters before swap
+      update_counters();
+	
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
@@ -736,4 +791,40 @@ int fg(int jid) {
   cprintf("FG exit\n"); 
  
  return 1; 
+}
+
+
+//----------------------------------------- helper functions ---------------
+int get_current_ticks(void)
+{
+  uint xticks;
+  
+  acquire(&tickslock);
+  xticks = ticks;
+  release(&tickslock);
+  return xticks;
+}
+
+void update_counters()
+{
+  struct proc *p;
+  
+  //acquire(&ptable.lock);
+  for (p = ptable.proc ; p < &ptable.proc[NPROC] ; p++ )  {
+    switch(p->state) {
+      case RUNNING:
+	p->rutime++;
+	break;
+      case SLEEPING:
+	p->stime++;
+	break;
+      case RUNNABLE:
+	p->retime++;
+	break;
+      default:
+	//cprintf("ERROR update_counters - state: %d", proc->state);
+	break;
+    };
+  }
+  //release(&ptable.lock);
 }
