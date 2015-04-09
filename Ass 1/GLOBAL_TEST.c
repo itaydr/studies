@@ -1,5 +1,6 @@
 #include "types.h"
 #include "user.h"
+#include "sched.c"
 
 void print_nonsense(void){
 
@@ -12,6 +13,13 @@ main(int argc, char *argv[])
 	int wtime, rtime, iotime;
 	int i;							//uncomment to check runnning time (1)
 	int x = 0;
+
+#ifdef SCHEDFLAG
+	
+	printf(1,"sdvsd %d", XX);
+	exit(1);
+#endif
+	
 	x = uptime();
 	printf(1, "%d\n", x);
 	if(fork() == 0){
