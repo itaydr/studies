@@ -704,3 +704,36 @@ int jobs() {
     
   return 1;
 }
+
+int fg(int jid) {
+  
+ struct job *j;
+ struct proc *p;
+ int jobExists = FALSE;
+ 
+ if (jid == NULL) {
+   for (j = jtable.jobs ; j < &jtable.jobs[NPROC] ; j++ )  {
+     if (j->state != JOB_S_UNUSED && proc->job->jid != j->jid) {
+       jid = j->state; 
+       cprintf("Using job with id - %d\n", jid);
+       break;
+     }
+   }
+ }
+ 
+  for (p = ptable.proc ; p < &ptable.proc[NPROC] ; p++ )  {
+    if (p->job->jid == jid) {
+      jobExists = TRUE;
+      cprintf("FG is waiting on process - %d\n", p->pid);
+      waitpid(p->pid, NULL, BLOCKING);
+    }
+  }
+  
+  if (jobExists == FALSE) {
+   cprintf("Could'nt find job - %d\n", jid); 
+  }
+  
+  cprintf("FG exit\n"); 
+ 
+ return 1; 
+}

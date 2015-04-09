@@ -26,6 +26,7 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int jobs(void);
+int fg(int jid);
 
 // ulib.c
 int stat(char*, struct stat*);

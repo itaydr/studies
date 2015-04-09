@@ -10,11 +10,8 @@ int npid;
 
 if (!(pid = fork()))
 {
-  fork();
-  fork();
-  printf(2, "getting into sleep\n");
-  sleep(10000);
-  printf(2, "getting out from sleep\n");
+  
+  sleep(1000); 
   exit(123);
 }
 else

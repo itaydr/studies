@@ -121,6 +121,7 @@ int 		waitpid(int pid, int *status, int options);
 void            wakeup(void*);
 void            yield(void);
 int 		jobs();
+int             fg(int jid);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

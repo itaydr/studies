@@ -24,3 +24,4 @@
 // Forks, and creates a new job.
 #define SYS_forkjob 23 
 #define SYS_jobs   24
+#define SYS_fg     25

@@ -125,3 +125,12 @@ int sys_jobs(void) {
   jobs();
    return 3;
 }
+
+int sys_fg(void) {
+ 
+  int jid;
+  argint(0, &jid);
+  fg(jid);
+  
+  return 1;
+}

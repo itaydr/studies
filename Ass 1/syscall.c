@@ -101,6 +101,7 @@ extern int sys_waitpid(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_jobs(void);
+extern int sys_fg(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -127,6 +128,7 @@ static int (*syscalls[])(void) = {
 [SYS_waitpid]    sys_waitpid,
 [SYS_forkjob]	sys_forkjob,
 [SYS_jobs]    sys_jobs,
+[SYS_fg]      sys_fg,
 };
 
 void
