@@ -537,9 +537,6 @@ scheduler(void)
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
-
-      // update counters before swap
-      update_counters();
 	
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -820,6 +817,7 @@ void update_counters()
 	//cprintf("ERROR update_counters - state: %d", proc->state);
 	break;
     };
+    //cprintf("RUN: %d, SLEEP: %d\n", p->rutime, p->stime);
   }
   //release(&ptable.lock);
 }

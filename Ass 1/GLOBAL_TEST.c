@@ -11,15 +11,21 @@ main(int argc, char *argv[])
 {
 	int wtime, rtime, iotime;
 	int i;							//uncomment to check runnning time (1)
+	int x = 0;
+	x = uptime();
+	printf(1, "%d\n", x);
 	if(fork() == 0){
+		sleep(100);
 		for(i=0; i<=5000; i++)		//uncomment to check runnning time (2)
 			i=i;//print_nonsense();			//uncomment to check runnning time (3)
 		//char buf[3];					//uncomment to check sleeping time (1)
 		//printf(1, "Enter a sole char (any char) and press enter: (the longer you wait, the bigger sleeping time will be)\n");		//uncomment to check sleeping time (2)
 		//read(0, buf, 3);				//uncomment to check sleeping time (3)
 		exit(0);
-    }
+	}
 	wait_stat(&wtime, &rtime, &iotime);
+	x = uptime();
+	printf(1, "%d\n", x);	
 	printf(2, "ready (runnable) time is: %d\n", wtime);
 	printf(2, "running time is: %d\n", rtime);
 	printf(2, "sleeping (waiting for io) time is: %d\n", iotime);
