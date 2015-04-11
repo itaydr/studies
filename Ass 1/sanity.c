@@ -7,7 +7,8 @@ main(int argc, char *argv[])
 {
 
   int numOfProcs = 20,i,status, wtime, rtime, iotime, pid;
-  long j;
+  int initial_ticks = 0;
+  long j,dummy;
   double temp = 0.5;
   int avgW=0, avgR=0, avgTurnaroundTime=0;
   
@@ -18,9 +19,16 @@ main(int argc, char *argv[])
       
       set_priority(((i % 3) + 1) * P_HIGH);
       
+      initial_ticks = uptime();
       // Check if this is 30 ticks
-      for (j = 1 ; j < 0xFFFFF ; j++) {
-	 temp = j / temp;
+      for (j = 1 ; ; j++) {
+	 dummy = temp * 2;
+	 dummy = dummy;
+	 temp++;
+	 temp--;
+	 if ( initial_ticks + 30 < uptime() ){
+	   break;
+	 }
       }
       
       exit(getpid());
@@ -36,7 +44,7 @@ main(int argc, char *argv[])
        printf(3,"Bad status -%d for process with id %d\n", status, pid);
      }
      
-     printf(1, "Pid:%d) Wait Time = %d, Running Time = %d, Turnaround Time = %d.\n", status, wtime, rtime, (wtime + rtime + iotime));
+     printf(1, "Pid:%d, priority: %d) Wait Time = %d, Running Time = %d, Turnaround Time = %d.\n", status, ((i % 3) + 1) * P_HIGH, wtime, rtime, (wtime + rtime + iotime));
      avgW += wtime;
      avgR += rtime;
      avgTurnaroundTime += (wtime + rtime + iotime);

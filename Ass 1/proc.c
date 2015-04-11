@@ -423,11 +423,11 @@ int shared_wait(int *status ,int *wtime, int *rtime, int *iotime) {
 	}
 	
 	if (wtime != NULL)
-	  *wtime = proc->retime;
+	  *wtime = p->retime;
 	if (rtime != NULL)
-	  *rtime = proc->rutime;
+	  *rtime = p->rutime;
 	if (iotime != NULL)
-	  *iotime = proc->stime;
+	  *iotime = p->stime;
 	
         kfree(p->kstack);
         p->kstack = 0;
