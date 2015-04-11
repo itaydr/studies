@@ -903,7 +903,7 @@ int fg(int jid) {
  if (jid == NULL) {
    for (j = jtable.jobs ; j < &jtable.jobs[NPROC] ; j++ )  {
      if (j->state != JOB_S_UNUSED && proc->job->jid != j->jid) {
-       jid = j->state; 
+       jid = j->jid; 
        break;
      }
    }
