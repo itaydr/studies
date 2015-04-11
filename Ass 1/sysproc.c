@@ -147,3 +147,19 @@ int sys_wait_stat(void) {
   
   return 1;
 }
+
+int sys_set_priority(void) {
+    int priority;
+    argint(0, &priority);
+    
+    if (priority != P_HIGH && priority != P_MED && priority != P_LOW) {
+      cprintf("Cannot set priority %d, please use one of the given priorities\n", priority); 
+    }
+    else {
+      proc->priority = priority;
+    }
+    
+    
+    
+    return 1;
+}

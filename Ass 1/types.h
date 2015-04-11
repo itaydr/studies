@@ -16,3 +16,8 @@ typedef uint pde_t;
 
 #define TRUE 		1
 #define FALSE 		0
+
+#define P_UNDEF	0
+#define P_HIGH	1
+#define P_MED	2
+#define P_LOW	3

@@ -2,7 +2,7 @@
 #include "stat.h"
 #include "user.h"
 
-intssss
+int 
 main(int argc, char *argv[])
 {
 

@@ -124,6 +124,7 @@ int 		jobs();
 int             fg(int jid);
 void 		update_counters();
 int 		wait_stat(int *wtime, int *rtime, int *iotime);
+int 		set_priority(int priority);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

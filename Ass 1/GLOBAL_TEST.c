@@ -11,9 +11,10 @@ main(int argc, char *argv[])
 {
 	int wtime, rtime, iotime;						//uncomment to check runnning time (1)
 	
-	for (;;)
-	printf(2, "pid - %d\n", getpid());
+	//for (;;)
+	//printf(2, "pid - %d\n", getpid());
 	
+	set_priority(P_LOW);
 	
 	wait_stat(&wtime, &rtime, &iotime);
 	printf(2, "ready (runnable) time is: %d\n", wtime);
