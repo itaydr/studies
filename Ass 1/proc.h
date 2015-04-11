@@ -4,13 +4,6 @@
 // Segments in proc->gdt.
 #define NSEGS     7
 
-#define P_UNDEF	0
-#define P_HIGH	1
-#define P_MED	2
-#define P_LOW	3
-
-
-
 // Per-CPU state
 struct cpu {
   uchar id;                    // Local APIC ID; index into cpus[] below
