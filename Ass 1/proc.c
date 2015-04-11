@@ -9,10 +9,27 @@
 
 #define SHELL_ID	2
 
+#define DEFAULT 1
+#define FRR 2
+#define FCFS 3
+#define CFS 4
+
 //------- helper funcs -----------
 int get_current_ticks(void);
 void update_counters();
 int shared_wait(int *status ,int *wtime, int *rtime, int *iotime);
+void on_state_set_to_runnable(struct proc *cur_proc);
+void on_state_set_to_sleeping(struct proc *cur_proc);
+void on_state_set_to_zombi(struct proc *cur_proc);
+void on_state_set_to_running(struct proc *cur_proc);
+void sched_q_enqueue(int pid);
+int  sched_q_dequeue(void);
+void sched_q_display(void);
+int  sched_q_peek(void);
+
+
+int front = -1;
+int rear  = -1;
 
 // Processes table
 struct {
@@ -26,6 +43,13 @@ struct {
   struct spinlock lock;
   struct job jobs[NPROC];
 } jtable;
+
+// scheduler queue
+struct {
+  //struct spinlock lock;
+  struct runnable_queue_entry queue[NPROC];
+} scheduler_queue;
+
 
 static struct proc *initproc;
 
@@ -64,6 +88,7 @@ allocproc(void)
 
 found:
   p->state = EMBRYO;
+  p->priority = P_MED;
   p->pid = nextpid++;
   release(&ptable.lock);
 
@@ -141,6 +166,7 @@ userinit(void)
   p->cwd = namei("/");
 
   p->state = RUNNABLE;
+  on_state_set_to_runnable(p);
 }
 
 // Grow current process's memory by n bytes.
@@ -228,6 +254,7 @@ fork(void)
   // lock to force the compiler to emit the np->state write last.
   acquire(&ptable.lock);
   np->state = RUNNABLE;
+  on_state_set_to_runnable(np);
   
   // set initial creation time
   np->stime	 = 0;
@@ -286,6 +313,7 @@ forkjob(char *command)
   // lock to force the compiler to emit the np->state write last.
   acquire(&ptable.lock);
   np->state = RUNNABLE;
+  on_state_set_to_runnable(np);
   
   // initial creation time
   np->stime	 = 0;
@@ -348,6 +376,7 @@ exit(int status)
 
   // Jump into the scheduler, never to return.
   proc->state = ZOMBIE;
+  on_state_set_to_zombi(proc);
   sched();
   panic("zombie exit");
 }
@@ -409,6 +438,8 @@ int shared_wait(int *status ,int *wtime, int *rtime, int *iotime) {
 	p->retime = 0;
 	p->rutime = 0;
 	p->stime = 0;
+	p->sched_time = 0;
+	p->priority = P_UNDEF;
         release(&ptable.lock);
 	
         return pid;
@@ -467,6 +498,8 @@ waitpid(int pid, int *status, int options)
 	  p->retime = 0;
 	  p->rutime = 0;
 	  p->stime = 0;
+	  p->sched_time = 0;
+	  p->priority = P_UNDEF;
 	  release(&ptable.lock);
 	  
 	  return pid;
@@ -523,22 +556,135 @@ int cleanJobIfNeeded(void) {
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
-void
-scheduler(void)
+
+#if SCHEDFLAG == DEFAULT
+  #include "scheduler_DEFAULT.c"
+  
+#elif SCHEDFLAG == FRR
+  #include "scheduler_FRR.c"
+  
+#elif SCHEDFLAG == FCFS
+  #include "scheduler_FCFS.c"
+  
+#elif SCHEDFLAG == CFS
+  #include "scheduler_CFS.c"
+  
+#endif
+
+/*
+void scheduler(void)
 {
   struct proc *p;
+  
+  struct proc *selected_p = NULL;
+  
+  cprintf("LOADED SCHEDFLAG == FRR\n");
+  
   for(;;){
     // Enable interrupts on this processor.
     sti();
 
     // Loop over process table looking for process to run.
+    //cprintf("test1111\n");
     acquire(&ptable.lock);
-#include "sched.c"
+    //cprintf("test2222\n");
+    
+    selected_p = NULL;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+	continue;
+      
+      if (selected_p == NULL) {
+	selected_p = p;
+	continue;
+      }
+
+      if ( selected_p->sched_time > p->sched_time ) {
+	selected_p = p;
+      }
+    }
+
+    
+if (selected_p == NULL) {
+  release(&ptable.lock);
+  continue;
+}
+
+    
+      cprintf("choose to switch to: %d\n", selected_p->pid);
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+	    
+      proc = selected_p;
+      switchuvm(selected_p);
+      selected_p->state = RUNNING;
+      on_state_set_to_running(p);
+      swtch(&cpu->scheduler, proc->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      proc = 0;
+    
+    
+    //cprintf("LOOP %d !\n", selected_p->pid);
+    selected_p = NULL;
+    release(&ptable.lock);
+  }
+}
+*/
+
+
+/*
+void
+scheduler(void)
+{
+  struct proc *p;
+  
+  struct proc *selected_p = NULL;
+  selected_p = selected_p;
+  
+  for(;;){
+    // Enable interrupts on this processor.
+    sti();
+
+    // Loop over process table looking for process to run.
+    //cprintf("test1111 - acquire scheduler\n");
+    acquire(&ptable.lock);
+    //cprintf("test2222\n");
+    
+    //#include "sched.c"
+    selected_p = NULL;for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
+	
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+      proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+      on_state_set_to_running(p);
+      swtch(&cpu->scheduler, proc->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      proc = 0;
+      cprintf("LOOP %d !\n", p->pid);
+}
+
+
+    
+    
+    //cprintf("test1111 - release scheduler\n");
     release(&ptable.lock);
 
   }
 }
 
+*/
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state.
 void
@@ -563,10 +709,12 @@ sched(void)
 void
 yield(void)
 {
-  
+  //cprintf("test1111 - acquire yield\n");
   acquire(&ptable.lock);  //DOC: yieldlock
   proc->state = RUNNABLE;
+  on_state_set_to_runnable(proc);
   sched();
+  //cprintf("test1111 - release yield\n");
   release(&ptable.lock);
 }
 
@@ -615,6 +763,7 @@ sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   proc->chan = chan;
   proc->state = SLEEPING;
+  on_state_set_to_sleeping(proc);
   sched();
 
   // Tidy up.
@@ -636,8 +785,11 @@ wakeup1(void *chan)
   struct proc *p;
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == SLEEPING && p->chan == chan)
+    if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
+      on_state_set_to_runnable(p);
+    }
+    
 }
 
 // Wake up all processes sleeping on chan.
@@ -662,8 +814,10 @@ kill(int pid)
     if(p->pid == pid){
       p->killed = 1;
       // Wake process from sleep if necessary.
-      if(p->state == SLEEPING)
+      if(p->state == SLEEPING) {
         p->state = RUNNABLE;
+	on_state_set_to_runnable(p);
+      }
       release(&ptable.lock);
       return 0;
     }
@@ -804,4 +958,125 @@ void update_counters()
     //cprintf("RUN: %d, SLEEP: %d\n", p->rutime, p->stime);
   }
   //release(&ptable.lock);
+}
+
+//void update_sched_time_based_on_method(struct proc *cur_proc)
+void on_state_set_to_runnable(struct proc *cur_proc)
+{  
+// cur_proc->sched_time = get_current_ticks();/* - BUGGGGGGGGGGGGGGGGG
+#if SCHEDFLAG == DEFAULT
+#elif SCHEDFLAG == FRR
+  sched_q_enqueue(cur_proc->pid);
+#elif SCHEDFLAG == FCFS
+  sched_q_enqueue(cur_proc->pid);
+#elif SCHEDFLAG == CFS  
+#endif
+  
+  return;
+}
+
+void on_state_set_to_sleeping(struct proc *cur_proc)
+{
+  
+#if SCHEDFLAG == DEFAULT
+#elif SCHEDFLAG == FRR
+#elif SCHEDFLAG == FCFS
+  if ( cur_proc->pid == sched_q_peek() )
+    sched_q_dequeue();
+#elif SCHEDFLAG == CFS
+#endif
+  //cur_proc->sched_time = get_current_ticks();
+  return;
+}
+
+void on_state_set_to_zombi(struct proc *cur_proc)
+{
+  
+#if SCHEDFLAG == DEFAULT
+#elif SCHEDFLAG == FRR
+#elif SCHEDFLAG == FCFS
+  if ( cur_proc->pid == sched_q_peek() )
+    sched_q_dequeue();
+#elif SCHEDFLAG == CFS
+#endif
+  //cur_proc->sched_time = get_current_ticks();
+  return;
+}
+
+
+void on_state_set_to_running(struct proc *cur_proc)
+{ 
+#if SCHEDFLAG == DEFAULT
+#elif SCHEDFLAG == FRR
+#elif SCHEDFLAG == FCFS
+#elif SCHEDFLAG == CFS
+#endif
+  //cur_proc->sched_time = get_current_ticks();
+  return;
+}
+
+
+//----------------QUEUE-----------
+
+void sched_q_enqueue(int pid)
+{
+  //struct runnable_queue_entry *p;
+  if((front==0&&rear==NPROC-1)||(front==rear+1)) {                         //condition for full Queue
+    panic("Queue is overflow\n");
+  }
+  if(front==-1) {
+    front=rear=0;
+  } else {
+    
+    if(rear==NPROC-1) {
+      rear=0;
+    } else {
+      rear++;
+    }
+    
+  }
+  scheduler_queue.queue[rear].pid = pid;
+  cprintf("%d succ. inserted\n",pid);
+  return;
+}
+int sched_q_dequeue(void)
+{
+  int y;
+  if(front==-1) {
+    cprintf("q is underflow\n");
+    return 0;
+  }
+  y=scheduler_queue.queue[front].pid;
+  if(front==rear) {
+    front=rear=-1;
+  } else {
+    if(front==NPROC-1) {
+      front=0;
+    } else {
+      front++;
+    }
+  }
+  cprintf("%d succ. deleted\n",y);
+  return y;
+}
+
+void sched_q_display(void)
+{
+  int i;
+  if(front==-1 && rear==-1) {
+    cprintf("q is empty\n");return;
+  }
+  cprintf("elements are :\n");
+  for(i=front;i!=rear;i=(i+1)%NPROC) {
+    cprintf("%d ",scheduler_queue.queue[i]);
+  }
+  cprintf("%d\n",scheduler_queue.queue[rear]);
+  return; 
+}
+int sched_q_peek(void)
+{
+  int y;
+  y=scheduler_queue.queue[front].pid;
+  cprintf("%d peeked (not deleted)\n",y);
+  return y;
 }

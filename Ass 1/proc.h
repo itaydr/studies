@@ -1,7 +1,13 @@
 #include "job.h"
+//#include "scheduler_cir_queue.h"
 
 // Segments in proc->gdt.
 #define NSEGS     7
+
+#define P_UNDEF	0
+#define P_HIGH	1
+#define P_MED	2
+#define P_LOW	3
 
 
 
@@ -77,6 +83,15 @@ struct proc {
   uint stime;
   uint retime;
   uint rutime;
+  uint sched_time;
+  uint priority;
+};
+
+
+struct runnable_queue_entry {
+  int pid;
+  int vruntime;
+  int valid_entry;
 };
 
 // Process memory is laid out contiguously, low addresses first:

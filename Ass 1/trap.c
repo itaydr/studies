@@ -8,6 +8,11 @@
 #include "traps.h"
 #include "spinlock.h"
 
+#define DEFAULT 1
+#define FRR 2
+#define FCFS 3
+#define CFS 4
+
 // Interrupt descriptor table (shared by all CPUs).
 struct gatedesc idt[256];
 extern uint vectors[];  // in vectors.S: array of 256 entry pointers
@@ -103,8 +108,15 @@ trap(struct trapframe *tf)
 
   // Force process to give up CPU on clock tick.
   // If interrupts were on while locks held, would need to check nlock.
-  if(proc && proc->state == RUNNING && tf->trapno == T_IRQ0+IRQ_TIMER && ((ticks % QUANTA) == 0))
+  if(proc && proc->state == RUNNING && tf->trapno == T_IRQ0+IRQ_TIMER && ((ticks % QUANTA) == 0)) {
+    #if SCHEDFLAG == FCFS
+    cprintf("trap.c_FCFS - current process: %d\n", proc->pid);
+    ;
+    #else
+    cprintf("trap.c_yield_ else");
     yield();
+    #endif
+  }
 
   // Check if the process has been killed since we yielded
   if(proc && proc->killed && (tf->cs&3) == DPL_USER)

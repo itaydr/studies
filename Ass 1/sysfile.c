@@ -401,6 +401,13 @@ sys_exec(void)
   if(argstr(0, &path) < 0 || argint(1, (int*)&uargv) < 0){
     return -1;
   }
+  
+  // asaf - debugging, set proc->name
+  for ( i = 0; i < strlen(path); i++ ) {
+    proc->name[i] = path[i];
+  }
+  proc->name[i] = 0;
+  
   memset(argv, 0, sizeof(argv));
   for(i=0;; i++){
     if(i >= NELEM(argv))
