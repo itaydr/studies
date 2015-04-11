@@ -1,10 +1,8 @@
 void scheduler(void)
 {
   struct proc *p;
-  
-  struct proc *selected_p = NULL;
-  selected_p = selected_p;
-  
+  struct proc *chosen_p = NULL;
+    
   cprintf("LOADED SCHEDFLAG == CFS\n");
   
   for(;;){
@@ -15,11 +13,104 @@ void scheduler(void)
     //cprintf("test1111\n");
     acquire(&ptable.lock);
     //cprintf("test2222\n");
-    //#include "sched.c"
     
+    chosen_p = NULL;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      //cprintf("process, running_time: %d sleeping_time: %d ready_time_time: %d\n", p->rutime, p->stime,p->retime);
+        if(p->state != RUNNABLE)
+            continue;
+	//cprintf("RUNNABLE process, pid:%d      pri: %d  running_time: %d   vruntime: %d\n", p->pid, p->priority, p->rutime, (p->priority *p->rutime));
+	if( NULL == chosen_p ) {
+	  chosen_p = p;
+	  continue;
+	}
+	
+	if( (p->priority * p->rutime) <  (chosen_p->priority * chosen_p->rutime) ){
+	  chosen_p = p;
+	}	
+    }
     
-    
-    release(&ptable.lock);
+    if (chosen_p != NULL) {
+      cprintf("pid: %d WON!\n", chosen_p->pid );
+        // Switch to chosen process.  It is the process's job
+        // to release ptable.lock and then reacquire it
+        // before jumping back to us.
+        proc = chosen_p;
+        switchuvm(chosen_p);
+        chosen_p->state = RUNNING;
+        on_state_set_to_running(chosen_p);
+        swtch(&cpu->scheduler, proc->context);
+        switchkvm();
 
+        // Process is done running for now.
+        // It should have changed its chosen_p->state before coming back.
+        proc = 0;
+        cprintf("LOOP %d !\n", chosen_p->pid);
+      }
+    release(&ptable.lock);
   }
 }
+
+
+/*
+ * void scheduler(void)
+{
+  struct proc *p;
+  struct proc *chosen_p = NULL;
+  uint chosen_vruntime = 0xFFFFFFFF;
+  
+  cprintf("LOADED SCHEDFLAG == CFS\n");
+  
+  // init sched_queue
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state == RUNNABLE) {
+      add_to_sched_array(p);
+    }
+  }
+  
+  for(;;){
+    // Enable interrupts on this processor.
+    sti();
+
+    // Loop over process table looking for process to run.
+    acquire(&ptable.lock);
+    
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+        if(p->state != RUNNABLE)
+            continue;
+	
+	
+	cprintf("-----------------------------\n");
+	sched_array_display_valid_entries();
+	cprintf("-----------------------------\n");
+	
+	chosen_pid = sched_array_get_min_vruntime_pid();
+	cprintf("chosen_pid is - %d\n", chosen_pid);
+	
+	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+	  if(p->pid != chosen_pid) {
+	    continue;
+	  } else {
+	    break;
+	  }
+	}
+	
+        // Switch to chosen process.  It is the process's job
+        // to release ptable.lock and then reacquire it
+        // before jumping back to us.
+        proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+        on_state_set_to_running(p);
+        swtch(&cpu->scheduler, proc->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        proc = 0;
+        cprintf("LOOP %d !\n", p->pid);
+      }
+    release(&ptable.lock);
+  }
+}
+*/

@@ -113,7 +113,7 @@ trap(struct trapframe *tf)
     cprintf("trap.c_FCFS - current process: %d\n", proc->pid);
     ;
     #else
-    cprintf("trap.c_yield_ else");
+    //cprintf("trap.c_yield_ else");
     yield();
     #endif
   }

@@ -90,7 +90,7 @@ struct proc {
 
 struct runnable_queue_entry {
   int pid;
-  int vruntime;
+  uint vruntime;
   int valid_entry;
 };
 

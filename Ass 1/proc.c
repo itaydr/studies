@@ -26,7 +26,12 @@ void sched_q_enqueue(int pid);
 int  sched_q_dequeue(void);
 void sched_q_display(void);
 int  sched_q_peek(void);
-
+/*
+void remove_from_sched_array(struct proc *cur_proc);
+void add_to_sched_array(struct proc *cur_proc);
+int  sched_array_get_min_vruntime_pid(void);
+void sched_array_display_valid_entries(void);
+*/
 
 int front = -1;
 int rear  = -1;
@@ -943,13 +948,13 @@ void update_counters()
   for (p = ptable.proc ; p < &ptable.proc[NPROC] ; p++ )  {
     switch(p->state) {
       case RUNNING:
-	p->rutime++;
+	p->rutime +=1;
 	break;
       case SLEEPING:
-	p->stime++;
+	p->stime +=1;
 	break;
       case RUNNABLE:
-	p->retime++;
+	p->retime +=1;
 	break;
       default:
 	//cprintf("ERROR update_counters - state: %d", proc->state);
@@ -969,7 +974,8 @@ void on_state_set_to_runnable(struct proc *cur_proc)
   sched_q_enqueue(cur_proc->pid);
 #elif SCHEDFLAG == FCFS
   sched_q_enqueue(cur_proc->pid);
-#elif SCHEDFLAG == CFS  
+#elif SCHEDFLAG == CFS
+  //add_to_sched_array(cur_proc);
 #endif
   
   return;
@@ -981,9 +987,11 @@ void on_state_set_to_sleeping(struct proc *cur_proc)
 #if SCHEDFLAG == DEFAULT
 #elif SCHEDFLAG == FRR
 #elif SCHEDFLAG == FCFS
-  if ( cur_proc->pid == sched_q_peek() )
+  if ( cur_proc->pid == sched_q_peek() ) {
     sched_q_dequeue();
+  }
 #elif SCHEDFLAG == CFS
+  //remove_from_sched_array(cur_proc);
 #endif
   //cur_proc->sched_time = get_current_ticks();
   return;
@@ -995,9 +1003,11 @@ void on_state_set_to_zombi(struct proc *cur_proc)
 #if SCHEDFLAG == DEFAULT
 #elif SCHEDFLAG == FRR
 #elif SCHEDFLAG == FCFS
-  if ( cur_proc->pid == sched_q_peek() )
+  if ( cur_proc->pid == sched_q_peek() ) {
     sched_q_dequeue();
+  }
 #elif SCHEDFLAG == CFS
+  //remove_from_sched_array(cur_proc);
 #endif
   //cur_proc->sched_time = get_current_ticks();
   return;
@@ -1080,3 +1090,81 @@ int sched_q_peek(void)
   cprintf("%d peeked (not deleted)\n",y);
   return y;
 }
+
+//------------ CFS methods -----------
+/*
+void remove_from_sched_array(struct proc *cur_proc)
+{
+  struct runnable_queue_entry *s_entry;
+  
+  for(s_entry = scheduler_queue.queue; s_entry < &scheduler_queue.queue[NPROC]; s_entry++){
+    if ( 1 == s_entry->valid_entry) {
+      if(cur_proc->pid == s_entry->pid) {
+	cprintf("removing: %d\n", cur_proc->pid);
+	s_entry->valid_entry = 0;
+	s_entry->pid         = 0;
+	s_entry->vruntime    = 0xFFFFFFFF;
+      }
+    }
+  }
+}*/
+/*
+void add_to_sched_array(struct proc *cur_proc)
+{
+  struct runnable_queue_entry *s_entry;
+  
+  for(s_entry = scheduler_queue.queue; s_entry < &scheduler_queue.queue[NPROC]; s_entry++){
+    if ( 1 == s_entry->valid_entry) {
+      if(cur_proc->pid == s_entry->pid) {
+	return ;
+      }
+    }
+  }
+  
+  for(s_entry = scheduler_queue.queue; s_entry < &scheduler_queue.queue[NPROC]; s_entry++){
+    if ( 0 == s_entry->valid_entry) {
+      cprintf("adding: %d\n", cur_proc->pid);
+      s_entry->valid_entry = 1;
+      s_entry->pid         = cur_proc->pid;
+      s_entry->vruntime    = (cur_proc->rutime * cur_proc->priority);
+    }
+  }
+}*/
+/*
+int sched_array_get_min_vruntime_pid(void)
+{
+  struct runnable_queue_entry *s_entry;
+  uint min_vruntime = 0xFFFFFFFF;
+  int min_pid = 0;
+  
+  for(s_entry = scheduler_queue.queue; s_entry < &scheduler_queue.queue[NPROC]; s_entry++){
+    if ( min_vruntime > s_entry->vruntime) {
+      min_vruntime = s_entry->vruntime;
+      min_pid      = s_entry->pid;
+    }
+  }
+  return min_pid;
+}*/
+/*
+void sched_array_display_valid_entries(void)
+{
+  int i = 0;
+  struct runnable_queue_entry *s_entry;
+  cprintf("elements are :\n");
+  for(s_entry = scheduler_queue.queue; s_entry < &scheduler_queue.queue[NPROC]; s_entry++){
+    cprintf("%d: ", i);
+    i +=1;
+    if ( 1 == s_entry->valid_entry) {
+      cprintf("%d\t", s_entry->pid); 
+    }
+  }
+  cprintf("\n");
+  for(s_entry = scheduler_queue.queue; s_entry < &scheduler_queue.queue[NPROC]; s_entry++){
+    if ( 1 == s_entry->valid_entry) {
+      cprintf("%d\t", s_entry->vruntime); 
+    }
+  }
+  cprintf("\n");
+  return;
+}
+*/
