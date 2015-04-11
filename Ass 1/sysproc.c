@@ -137,13 +137,14 @@ int sys_fg(void) {
 
 int sys_wait_stat(void) {
  
-  int *wtime, *rtime, *iotime;
+  int *status, *wtime, *rtime, *iotime;
+ 
+  argptr(0, (char**) &status, sizeof(int*));
+  argptr(1, (char**) &wtime, sizeof(int*));
+  argptr(2, (char**) &rtime, sizeof(int*));
+  argptr(3, (char**) &iotime, sizeof(int*));
   
-  argptr(0, (char**) &wtime, sizeof(int*));
-  argptr(1, (char**) &rtime, sizeof(int*));
-  argptr(2, (char**) &iotime, sizeof(int*));
-  
-  wait_stat(wtime, rtime, iotime);
+  wait_stat(status, wtime, rtime, iotime);
   
   return 1;
 }

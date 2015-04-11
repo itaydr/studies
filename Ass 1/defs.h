@@ -123,7 +123,7 @@ void            yield(void);
 int 		jobs();
 int             fg(int jid);
 void 		update_counters();
-int 		wait_stat(int *wtime, int *rtime, int *iotime);
+int 		wait_stat(int *status, int *wtime, int *rtime, int *iotime);
 int 		set_priority(int priority);
 
 // swtch.S

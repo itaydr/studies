@@ -27,7 +27,7 @@ int sleep(int);
 int uptime(void);
 int jobs(void);
 int fg(int jid);
-int wait_stat(int *wtime, int *rtime, int *iotime);
+int wait_stat(int *status, int *wtime, int *rtime, int *iotime);
 int set_priority(int priority);
 
 // ulib.c

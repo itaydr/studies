@@ -394,8 +394,8 @@ wait(int *status)
   return shared_wait(status, NULL, NULL, NULL);
 }
 
-int wait_stat(int *wtime, int *rtime, int *iotime) {
-  return shared_wait(NULL, wtime, rtime, iotime); 
+int wait_stat(int *status, int *wtime, int *rtime, int *iotime) {
+  return shared_wait(status, wtime, rtime, iotime); 
 }
 
 
