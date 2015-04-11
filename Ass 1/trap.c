@@ -110,7 +110,7 @@ trap(struct trapframe *tf)
   // If interrupts were on while locks held, would need to check nlock.
   if(proc && proc->state == RUNNING && tf->trapno == T_IRQ0+IRQ_TIMER && ((ticks % QUANTA) == 0)) {
     #if SCHEDFLAG == FCFS
-    cprintf("trap.c_FCFS - current process: %d\n", proc->pid);
+    //cprintf("trap.c_FCFS - current process: %d\n", proc->pid);
     ;
     #else
     //cprintf("trap.c_yield_ else");

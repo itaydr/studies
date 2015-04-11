@@ -3,8 +3,8 @@
 
 struct runnable_queue_entry {
   int pid;
-  int vruntime;
-  int valid_entry;
+  //int vruntime;
+  //int valid_entry;
 };
 
 void sched_q_enqueue(int pid);

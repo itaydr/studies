@@ -2,7 +2,7 @@ void scheduler(void)
 {
   struct proc *p;
   int chosen_pid = 0;
-  cprintf("LOADED SCHEDFLAG == FCFS\n");
+  //cprintf("LOADED SCHEDFLAG == FCFS\n");
   
   for(;;){
     // Enable interrupts on this processor.
@@ -16,12 +16,13 @@ void scheduler(void)
         if(p->state != RUNNABLE)
             continue;
 	
+	/*
 	cprintf("-----------------------------\n");
 	sched_q_display();
 	cprintf("-----------------------------\n");
-	
+	*/
 	chosen_pid = sched_q_peek();
-	cprintf("chosen_pid is - %d\n", chosen_pid);
+	//cprintf("chosen_pid is - %d\n", chosen_pid);
 	
 	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 	  if(p->pid != chosen_pid) {
@@ -44,7 +45,7 @@ void scheduler(void)
         // Process is done running for now.
         // It should have changed its p->state before coming back.
         proc = 0;
-        cprintf("LOOP %d !\n", p->pid);
+        //cprintf("LOOP %d !\n", p->pid);
       }
     release(&ptable.lock);
   }

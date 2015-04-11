@@ -1046,7 +1046,7 @@ void sched_q_enqueue(int pid)
     
   }
   scheduler_queue.queue[rear].pid = pid;
-  cprintf("%d succ. inserted\n",pid);
+  //cprintf("%d succ. inserted\n",pid);
   return;
 }
 int sched_q_dequeue(void)
@@ -1066,7 +1066,7 @@ int sched_q_dequeue(void)
       front++;
     }
   }
-  cprintf("%d succ. deleted\n",y);
+  //cprintf("%d succ. deleted\n",y);
   return y;
 }
 
@@ -1087,7 +1087,7 @@ int sched_q_peek(void)
 {
   int y;
   y=scheduler_queue.queue[front].pid;
-  cprintf("%d peeked (not deleted)\n",y);
+  //cprintf("%d peeked (not deleted)\n",y);
   return y;
 }
 

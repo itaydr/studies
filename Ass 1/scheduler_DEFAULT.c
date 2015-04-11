@@ -2,7 +2,7 @@ void scheduler(void)
 {
   struct proc *p;
   
-  cprintf("LOADED SCHEDFLAG == DEFAULT\n");
+  //cprintf("LOADED SCHEDFLAG == DEFAULT\n");
   
   for(;;){
     // Enable interrupts on this processor.

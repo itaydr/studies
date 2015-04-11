@@ -42,7 +42,7 @@ void sched_q_enqueue(int pid)
     
   }
   scheduler_queue.queue[rear]=pid;
-  printf("%d succ. inserted\n",pid);
+  //printf("%d succ. inserted\n",pid);
   return;
 }
 int dequeue(void)
@@ -62,7 +62,7 @@ int dequeue(void)
       front++;
     }
   }
-  printf("%d succ. deleted\n",y);
+  //printf("%d succ. deleted\n",y);
   return;
 }
 
