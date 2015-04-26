@@ -84,15 +84,15 @@ exec(char *path, char **argv)
   for(last=s=path; *s; s++)
     if(*s == '/')
       last = s+1;
-  safestrcpy(proc->name, last, sizeof(proc->name));
+  safestrcpy(PROC->name, last, sizeof(PROC->name));
 
   // Commit to the user image.
-  oldpgdir = proc->pgdir;
-  proc->pgdir = pgdir;
-  proc->sz = sz;
-  proc->tf->eip = elf.entry;  // main
-  proc->tf->esp = sp;
-  switchuvm(proc);
+  oldpgdir = PROC->pgdir;
+  PROC->pgdir = pgdir;
+  PROC->sz = sz;
+  thread->tf->eip = elf.entry;  // main
+  thread->tf->esp = sp;
+  switchuvm(PROC);
   freevm(oldpgdir);
   return 0;
 

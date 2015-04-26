@@ -33,7 +33,7 @@ void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
-  initlock(&ttable->lock, "ttable");
+  initlock(&ttable.lock, "ttable");
 }
 
 //PAGEBREAK: 32
@@ -45,8 +45,6 @@ static struct proc*
 allocproc(void)
 {
   struct proc *p;
-  struct thread *t;
-  char *sp;
 
   acquire(&ptable.lock);
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
@@ -84,7 +82,7 @@ found:
 
   // Allocate kernel stack.
   if((t->kstack = kalloc()) == 0){
-    p->state = UNUSED;
+      t->state = UNUSED;
     return 0;
   }
   sp = t->kstack + KSTACKSIZE;
@@ -120,10 +118,10 @@ userinit(void)
   
   t = allocthread();
   initproc = t->proc;
-  if((p->pgdir = setupkvm()) == 0)
+  if((t->proc->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
-  inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
-  p->sz = PGSIZE;
+  inituvm(t->proc->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
+  t->proc->sz = PGSIZE;
   memset(t->tf, 0, sizeof(*t->tf));
   t->tf->cs = (SEG_UCODE << 3) | DPL_USER;
   t->tf->ds = (SEG_UDATA << 3) | DPL_USER;
@@ -133,10 +131,11 @@ userinit(void)
   t->tf->esp = PGSIZE;
   t->tf->eip = 0;  // beginning of initcode.S
 
-  safestrcpy(PROC->name, "initcode", sizeof(p->name));
-  p->cwd = namei("/");
+  safestrcpy(PROC->name, "initcode", sizeof(t->proc->name));
+  t->proc->cwd = namei("/");
 
-  p->state = RUNNABLE;
+  t->proc->state = RUNNABLE;
+  t->state = RUNNABLE;
 }
 
 // Grow current process's memory by n bytes.
@@ -181,19 +180,19 @@ fork(void)
     nt->state = UNUSED;
     return -1;
   }
-  np->sz = proc->sz;
-  np->parent = proc;
+  np->sz = PROC->sz;
+  np->parent = PROC;
   *nt->tf = *thread->tf;
 
   // Clear %eax so that fork returns 0 in the child.
   nt->tf->eax = 0;
 
   for(i = 0; i < NOFILE; i++)
-    if(proc->ofile[i])
-      np->ofile[i] = filedup(proc->ofile[i]);
-  np->cwd = idup(proc->cwd);
+    if(PROC->ofile[i])
+      np->ofile[i] = filedup(PROC->ofile[i]);
+  np->cwd = idup(PROC->cwd);
 
-  safestrcpy(np->name, proc->name, sizeof(proc->name));
+  safestrcpy(np->name, PROC->name, sizeof(PROC->name));
   safestrcpy(nt->name, thread->name, sizeof(thread->name));
   
   pid = np->pid;
@@ -205,6 +204,27 @@ fork(void)
   release(&ptable.lock);
   
   return pid;
+}
+
+
+void
+cleanTread (struct thread *t) {
+   kfree(t->kstack);
+   t->kstack = 0;
+   t->state = UNUSED;
+   t->tid = 0;
+   t->proc = 0;
+   t->name[0] = 0;
+   t->killed = 0;
+}
+
+void cleanProccess(struct proc *p) {
+        freevm(p->pgdir);
+        p->state = UNUSED;
+        p->pid = 0;
+        p->parent = 0;
+        p->name[0] = 0;
+        p->killed = 0;
 }
 
 // Exit the current process.  Does not return.
@@ -248,7 +268,7 @@ exit(void)
   }
   
   // Go over all threads of curent proccess, and kill them.
-  for (t = ttable.thread; t < &ttable->thread[MAX_NTHREAD]; t++) {
+  for (t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
     if (t->proc == PROC) {
       if (t != thread) {
 	if (t->state == RUNNING) {
@@ -264,25 +284,6 @@ exit(void)
   panic("zombie exit");
 }
 
-void
-cleanTread (struct thread *t) {
-   kfree(t->kstack);
-   t->kstack = 0;
-   t->state = UNUSED;
-   t->pid = 0;
-   t->proc = 0;
-   t->name[0] = 0;
-   t->killed = 0;
-}
-
-void cleanProccess(struct proc *p) {
-        freevm(p->pgdir);
-        p->state = UNUSED;
-        p->pid = 0;
-        p->parent = 0;
-        p->name[0] = 0;
-        p->killed = 0;
-}
 
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
@@ -297,7 +298,7 @@ wait(void)
     // Scan through table looking for zombie children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != proc)
+      if(p->parent != PROC)
         continue;
       havekids = 1;
       if(p->state == ZOMBIE){
@@ -332,9 +333,7 @@ wait(void)
 void
 scheduler(void)
 {
-  struct proc *p;
   struct thread *t;
-
   for(;;){
     // Enable interrupts on this processor.
     sti();
@@ -380,7 +379,7 @@ sched(void)
   if(readeflags()&FL_IF)
     panic("sched interruptible");
   intena = cpu->intena;
-  swtch(&proc->context, cpu->scheduler);
+  swtch(&thread->context, cpu->scheduler);
   cpu->intena = intena;
 }
 
@@ -515,7 +514,7 @@ procdump(void)
   int i;
   struct proc *p;
   char *state;
-  uint pc[10];
+  //uint pc[10];
   
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->state == UNUSED)
@@ -532,6 +531,7 @@ procdump(void)
     //  for(i=0; i<10 && pc[i] != 0; i++)
     //    cprintf(" %p", pc[i]);
     //}
+    i=i;
     cprintf("\n");
   }
 }
