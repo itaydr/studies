@@ -57,7 +57,6 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   release(&ptable.lock);
-
   return p;
 }
 
@@ -117,6 +116,7 @@ userinit(void)
   extern char _binary_initcode_start[], _binary_initcode_size[];
   
   t = allocthread();
+    
   initproc = t->proc;
   if((t->proc->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
@@ -131,10 +131,12 @@ userinit(void)
   t->tf->esp = PGSIZE;
   t->tf->eip = 0;  // beginning of initcode.S
 
-  safestrcpy(PROC->name, "initcode", sizeof(t->proc->name));
+  safestrcpy(t->proc->name, "initcode", sizeof(t->proc->name));
+
   t->proc->cwd = namei("/");
 
   t->proc->state = RUNNABLE;
+  // Never Reached
   t->state = RUNNABLE;
 }
 
@@ -334,31 +336,33 @@ void
 scheduler(void)
 {
   struct thread *t;
+
   for(;;){
     // Enable interrupts on this processor.
     sti();
-
+    P
     // Loop over process table looking for process to run.
     acquire(&ttable.lock);
-    
+
     for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++){
       if(t->state != RUNNABLE)
         continue;
-
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
       thread = t;
+      
       switchuvm(t->proc);
       t->state = RUNNING;
       swtch(&cpu->scheduler, t->context);
       switchkvm();
-
+  
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       thread = 0;
+      P
     }
-    release(&ptable.lock);
+    release(&ttable.lock);
 
   }
 }
