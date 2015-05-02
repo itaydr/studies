@@ -566,13 +566,61 @@ void killThreadsOfCurrentProc() {
 int kthread_create( void*(*start_func)(), void* stack, uint stack_size ) {
   return 0;
 }
+
 int kthread_id(void) {
  return thread->tid; 
 }
-void 		kthread_exit(void) {
+
+void kthread_exit(void) {
+  int procHasOtherThreads = 0;
+  struct thread *t;
+  acquire(&ptable.lock);
+  for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
+      if (t != thread && t->state != UNUSED) {
+	procHasOtherThreads = 1;
+	break;
+      }
+  }
+  release(&ptable.lock);
+  
+  cleanTread(thread);
+  
+  wakeup1(thread);
+  
+  // If no other threads - kill the proc.
+  if (procHasOtherThreads == 0) {
+     exit();
+  }
+  
+  sched();
   
 }
 
-int 		kthread_join(int thread_id) {
+int kthread_join(int thread_id) {
+  struct thread *t;
+  int threadExists = 0;
+
+  acquire(&ptable.lock);
+  for(;;){
+     for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
+      if(t->tid != thread_id)
+        continue;
+      threadExists = 1;
+      if(t->state == UNUSED){
+        release(&ptable.lock);
+        return 0;
+      }
+    }
+
+    // No point waiting if we don't have any children.
+    if(!threadExists || thread->killed){
+      release(&ptable.lock);
+      return -1;
+    }
+
+    // Wait for children to exit.  (See wakeup1 call in proc_exit.)
+    sleep(thread, &ptable.lock);  //DOC: wait-sleep
+  }
+  
   return 0;
 }
