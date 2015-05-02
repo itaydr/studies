@@ -61,7 +61,7 @@ found:
 }
 
 static struct thread*
-allocthread(void)
+allocthread(int createProc)
 {
   struct proc *p;
   struct thread *t;
@@ -100,8 +100,10 @@ found:
   memset(t->context, 0, sizeof *t->context);
   t->context->eip = (uint)forkret;
   
-  p = allocproc();
-  t->proc = p;
+  if (createProc) {
+    p = allocproc();
+    t->proc = p;
+  }
 
   return t;
 }
@@ -115,7 +117,7 @@ userinit(void)
   struct thread *t;
   extern char _binary_initcode_start[], _binary_initcode_size[];
   
-  t = allocthread();
+  t = allocthread(1);
     
   initproc = t->proc;
   if((t->proc->pgdir = setupkvm()) == 0)
@@ -170,7 +172,7 @@ fork(void)
   struct proc *np;
   struct thread *nt;
   // Allocate process.
-  if((nt = allocthread()) == 0)
+  if((nt = allocthread(1)) == 0)
     return -1;
   
   np = nt->proc;
@@ -564,7 +566,17 @@ void killThreadsOfCurrentProc() {
 }
 
 int kthread_create( void*(*start_func)(), void* stack, uint stack_size ) {
-  return 0;
+  struct thread *t;
+  
+  if((t = allocthread(1)) == 0)
+    return -1;
+  
+  t->tf->eip=(uint)start_func;
+  t->tf->esp=(uint)stack+stack_size;
+  t->proc = PROC;
+  t->state = RUNNABLE;
+  
+  return t;
 }
 
 int kthread_id(void) {
@@ -585,6 +597,7 @@ void kthread_exit(void) {
   
   cleanTread(thread);
   
+  // Other threads might have called join on us.
   wakeup1(thread);
   
   // If no other threads - kill the proc.
