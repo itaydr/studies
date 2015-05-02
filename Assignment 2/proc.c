@@ -67,17 +67,17 @@ allocthread(void)
   struct thread *t;
   char *sp;
 
-  acquire(&ttable.lock);
+  acquire(&ptable.lock);
   for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++)
     if(t->state == UNUSED)
       goto found;
-  release(&ttable.lock);
+  release(&ptable.lock);
   return 0;
 
 found:
   t->state = EMBRYO;
   t->tid = nexttid++;
-  release(&ttable.lock);
+  release(&ptable.lock);
 
   // Allocate kernel stack.
   if((t->kstack = kalloc()) == 0){
@@ -340,9 +340,8 @@ scheduler(void)
   for(;;){
     // Enable interrupts on this processor.
     sti();
-    P
     // Loop over process table looking for process to run.
-    acquire(&ttable.lock);
+    acquire(&ptable.lock);
 
     for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++){
       if(t->state != RUNNABLE)
@@ -351,18 +350,16 @@ scheduler(void)
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
       thread = t;
-      
       switchuvm(t->proc);
       t->state = RUNNING;
       swtch(&cpu->scheduler, t->context);
       switchkvm();
-  
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       thread = 0;
-      P
+     
     }
-    release(&ttable.lock);
+    release(&ptable.lock);
 
   }
 }

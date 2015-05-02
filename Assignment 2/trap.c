@@ -37,11 +37,12 @@ void
 trap(struct trapframe *tf)
 {
   if(tf->trapno == T_SYSCALL){
-    if(thread->killed)
+    if(thread && thread->killed)
       exit();
-    thread->tf = tf;
+    if (thread)
+      thread->tf = tf;
     syscall();
-    if(thread->killed)
+    if(thread && thread->killed)
       exit();
     return;
   }
@@ -80,18 +81,20 @@ trap(struct trapframe *tf)
    
   //PAGEBREAK: 13
   default:
-    if(PROC == 0 || (tf->cs&3) == 0){
+    if((thread == 0 || thread->proc ==0) || (tf->cs&3) == 0){
       // In kernel, it must be our mistake.
       cprintf("unexpected trap %d from cpu %d eip %x (cr2=0x%x)\n",
               tf->trapno, cpu->id, tf->eip, rcr2());
       panic("trap");
     }
-    // In user space, assume process misbehaved.
-    cprintf("pid %d %s: trap %d err %d on cpu %d "
-            "eip 0x%x addr 0x%x--kill proc\n",
-            PROC->pid, PROC->name, tf->trapno, tf->err, cpu->id, tf->eip, 
-            rcr2());
-    PROC->killed = 1;
+    if (thread && thread->proc) {
+      // In user space, assume process misbehaved.
+      cprintf("pid %d %s: trap %d err %d on cpu %d "
+	      "eip 0x%x addr 0x%x--kill proc\n",
+	      PROC->pid, PROC->name, tf->trapno, tf->err, cpu->id, tf->eip, 
+	      rcr2());
+      PROC->killed = 1;
+    }
   }
 
   // Force process exit if it has been killed and is in user space.
@@ -103,10 +106,11 @@ trap(struct trapframe *tf)
   // Force process to give up CPU on clock tick.
   // If interrupts were on while locks held, would need to check nlock.
     //TODO: is it ok to use thread state?
-  if(PROC && thread->state == RUNNING && tf->trapno == T_IRQ0+IRQ_TIMER)
+  if(thread && thread->state == RUNNING && tf->trapno == T_IRQ0+IRQ_TIMER)
     yield();
 
   // Check if the process has been killed since we yielded
   if(thread && thread->killed && (tf->cs&3) == DPL_USER)
     exit();
+  
 }
