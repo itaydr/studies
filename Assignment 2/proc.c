@@ -543,6 +543,8 @@ procdump(void)
   }
 }
 
+// Threads
+
 void killThreadsOfCurrentProc() {
     struct thread *t;
     acquire(&ptable.lock);
@@ -559,4 +561,18 @@ void killThreadsOfCurrentProc() {
 	}
     }
      release(&ptable.lock);
+}
+
+int kthread_create( void*(*start_func)(), void* stack, uint stack_size ) {
+  return 0;
+}
+int kthread_id(void) {
+ return thread->tid; 
+}
+void 		kthread_exit(void) {
+  
+}
+
+int 		kthread_join(int thread_id) {
+  return 0;
 }
