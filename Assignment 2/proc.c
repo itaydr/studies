@@ -337,16 +337,18 @@ void
 scheduler(void)
 {
   struct thread *t;
+  struct proc *p;
 
   for(;;){
     // Enable interrupts on this processor.
     sti();
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-
-    for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++){
-      if(t->state != RUNNABLE)
-        continue;
+    
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+      for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++){
+	if(p != t->proc || p->state != RUNNABLE || t->state != RUNNABLE)
+	  continue;
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
@@ -360,6 +362,8 @@ scheduler(void)
       thread = 0;
      
     }
+    }
+    
     release(&ptable.lock);
 
   }
