@@ -282,6 +282,7 @@ exit(void)
   }
   // Jump into the scheduler, never to return.
   PROC->state = ZOMBIE;
+  thread->state = ZOMBIE;
   sched();
   panic("zombie exit");
 }
