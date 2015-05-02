@@ -9,6 +9,8 @@ struct spinlock;
 struct stat;
 struct superblock;
 
+#define P   for (;;) cprintf(".");
+
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
