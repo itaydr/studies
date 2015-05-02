@@ -180,6 +180,7 @@ fork(void)
     kfree(nt->kstack);
     nt->kstack = 0;
     nt->state = UNUSED;
+    np->state = UNUSED;
     return -1;
   }
   np->sz = PROC->sz;
@@ -282,7 +283,7 @@ exit(void)
   }
   // Jump into the scheduler, never to return.
   PROC->state = ZOMBIE;
-  thread->state = ZOMBIE;
+  thread->state = UNUSED;
   sched();
   panic("zombie exit");
 }
@@ -540,4 +541,22 @@ procdump(void)
     i=i;
     cprintf("\n");
   }
+}
+
+void killThreadsOfCurrentProc() {
+    struct thread *t;
+    acquire(&ptable.lock);
+    for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
+	if (t != thread && t->proc == PROC) { // Not the current thread, but of the same process.
+
+	  if (t->state == RUNNING) {
+	    // TODO: this thread is running on a different CPU, handle this.
+	  }
+	  t->killed = 1;
+	  if(t->state == SLEEPING)
+	    t->state = RUNNABLE;
+	   release(&ptable.lock);
+	}
+    }
+     release(&ptable.lock);
 }
