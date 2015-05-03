@@ -214,7 +214,7 @@ fork(void)
 
 void
 cleanTread (struct thread *t) {
-   kfree(t->kstack);
+   if (t) kfree(t->kstack);
    t->kstack = 0;
    t->state = UNUSED;
    t->tid = 0;
@@ -240,10 +240,43 @@ exit(void)
 {
   struct proc *p;
   struct thread *t;
-  int fd;
+  int fd, anotherThreadIsAlsoRunning = 0;
 
   if(PROC == initproc)
     panic("init exiting");
+  
+  // Go over all threads of curent proccess, and kill them.
+  for (t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
+    if (t->proc == PROC) {
+      if (t != thread) {
+	if (t->state == RUNNING) {
+	  anotherThreadIsAlsoRunning = 1;
+	}
+      }
+    }
+  }
+  
+  if (anotherThreadIsAlsoRunning) {
+  // Go over all threads of curent proccess, and kill them.
+    for (t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
+      if (t->proc == PROC) {
+	if (t != thread) {
+	  if (t->state == RUNNING) {
+	    t->killed = 1;
+	  }
+	  else {
+	    t->state = UNUSED;
+	  }
+	}
+      }
+    }
+    
+    thread->state = UNUSED;
+    sched();
+    
+    return;
+  }
+  
 
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
@@ -594,7 +627,7 @@ void kthread_exit(void) {
 	break;
       }
   }
-  //cleanTread(thread); // TODO
+
   thread->state = UNUSED;
   
   // Other threads might have called join on us.
@@ -604,7 +637,6 @@ void kthread_exit(void) {
   if (procHasOtherThreads == 0) {
      exit();
   }
-      //release(&ptable.lock);
 
   sched();
   
@@ -621,6 +653,7 @@ int kthread_join(int thread_id) {
         continue;
       threadExists = 1;
       if(t->state == UNUSED){
+	cleanTread(t);
         release(&ptable.lock);
         return 0;
       }
