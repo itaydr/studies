@@ -1,3 +1,4 @@
+#include "spinlock.h"
 // Segments in proc->gdt.
 #define NSEGS     7
 // Max number of threads for a proc.
@@ -69,6 +70,7 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  struct spinlock pLock;
 };
 
 // Thread

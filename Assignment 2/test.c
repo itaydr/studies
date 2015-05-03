@@ -22,33 +22,8 @@ void * thread2 (void){
 
 
 int main(void){
-	//lock = kthread_mutex_alloc();
-	//cond = kthread_cond_alloc();
-	int i = 0;
-	char *res;
-	for (i = 0 ; i < 20 ; i ++) {
-	  res = sbrk(500);
-	  printf(2, "SBRK = %s\n", res);
-	}
-	
-	
-	return 0;
-	int  tid;
-	void* stack;// =malloc(4000);
-	for(i = 0; i< 20; i++){
-		stack =malloc(4000);
-		tid = kthread_create(thread1,stack,4000);
-		tid = tid;
-		//kthread_join(tid);
-		printf(1,"Woke up!! %d", kthread_id());
-	}
-	
-// 	for(i = 0; i< 20; i++){
-// 		stack =malloc(4000);
-// 		kthread_create(thread2,stack,4000);
-// 	}
-	
+
+	sbrk(32768);
 	
 	exit();
-	//return (void *) 0;
 }

@@ -32,8 +32,13 @@ static void wakeup1(void *chan);
 void
 pinit(void)
 {
+  struct proc *p;
   initlock(&ptable.lock, "ptable");
   initlock(&ttable.lock, "ttable");
+  
+   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+     initlock(&p->pLock, "pLock"); 
+   }
 }
 
 //PAGEBREAK: 32
@@ -149,7 +154,9 @@ growproc(int n)
 {
   uint sz;
   
+  acquire(&PROC->pLock);
   sz = PROC->sz;
+
   if(n > 0){
     if((sz = allocuvm(PROC->pgdir, sz, sz + n)) == 0)
       return -1;
@@ -157,8 +164,12 @@ growproc(int n)
     if((sz = deallocuvm(PROC->pgdir, sz, sz + n)) == 0)
       return -1;
   }
+
   PROC->sz = sz;
+  
   switchuvm(PROC);
+  release(&PROC->pLock);
+
   return 0;
 }
 

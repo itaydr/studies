@@ -46,7 +46,6 @@ trap(struct trapframe *tf)
       exit();
     return;
   }
-
   switch(tf->trapno){
   case T_IRQ0 + IRQ_TIMER:
     if(cpu->id == 0){
@@ -89,10 +88,10 @@ trap(struct trapframe *tf)
     }
     if (thread && thread->proc) {
       // In user space, assume process misbehaved.
-      cprintf("pid %d %s: trap %d err %d on cpu %d "
-	      "eip 0x%x addr 0x%x--kill proc\n",
-	      PROC->pid, PROC->name, tf->trapno, tf->err, cpu->id, tf->eip, 
-	      rcr2());
+//       cprintf("pid %d %s: trap %d err %d on cpu %d "
+// 	      "eip 0x%x addr 0x%x--kill proc\n",
+// 	      PROC->pid, PROC->name, tf->trapno, tf->err, cpu->id, tf->eip, 
+// 	      rcr2());
       PROC->killed = 1;
     }
   }
