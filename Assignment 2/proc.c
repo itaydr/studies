@@ -568,15 +568,16 @@ void killThreadsOfCurrentProc() {
 int kthread_create( void*(*start_func)(), void* stack, uint stack_size ) {
   struct thread *t;
   
-  if((t = allocthread(1)) == 0)
+  if((t = allocthread(0)) == 0)
     return -1;
   
+  memmove(t->tf, thread->tf, sizeof(*t->tf));
   t->tf->eip=(uint)start_func;
   t->tf->esp=(uint)stack+stack_size;
   t->proc = PROC;
   t->state = RUNNABLE;
   
-  return t;
+  return t->tid;
 }
 
 int kthread_id(void) {
@@ -588,14 +589,13 @@ void kthread_exit(void) {
   struct thread *t;
   acquire(&ptable.lock);
   for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
-      if (t != thread && t->state != UNUSED) {
+      if (t != thread && t->state != UNUSED && t->proc == thread->proc) {
 	procHasOtherThreads = 1;
 	break;
       }
   }
-  release(&ptable.lock);
-  
-  cleanTread(thread);
+  //cleanTread(thread); // TODO
+  thread->state = UNUSED;
   
   // Other threads might have called join on us.
   wakeup1(thread);
@@ -604,7 +604,8 @@ void kthread_exit(void) {
   if (procHasOtherThreads == 0) {
      exit();
   }
-  
+      //release(&ptable.lock);
+
   sched();
   
 }
@@ -623,6 +624,8 @@ int kthread_join(int thread_id) {
         release(&ptable.lock);
         return 0;
       }
+      
+      break;
     }
 
     // No point waiting if we don't have any children.
@@ -632,8 +635,9 @@ int kthread_join(int thread_id) {
     }
 
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
-    sleep(thread, &ptable.lock);  //DOC: wait-sleep
+    sleep(t, &ptable.lock);  //DOC: wait-sleep
   }
+  release(&ptable.lock);
   
   return 0;
 }
