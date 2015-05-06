@@ -7,6 +7,7 @@
 #include "proc.h"
 #include "spinlock.h"
 
+
 #define MAX_NTHREAD NTHREADS * NPROC
 
 
@@ -16,7 +17,6 @@ struct {
 } ptable;
 
 struct {
-  struct spinlock lock;
   struct thread thread[MAX_NTHREAD];
 } ttable;
 
@@ -33,12 +33,17 @@ void
 pinit(void)
 {
   struct proc *p;
+  int i = 0;
   initlock(&ptable.lock, "ptable");
-  initlock(&ttable.lock, "ttable");
   
    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
      initlock(&p->pLock, "pLock"); 
    }
+   
+   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+        p->thread = &ttable.thread[i * NTHREADS];
+	i++;
+   }   
 }
 
 //PAGEBREAK: 32
@@ -62,18 +67,18 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   release(&ptable.lock);
+  
   return p;
 }
 
 static struct thread*
-allocthread(int createProc)
+allocthread(struct proc *process)
 {
-  struct proc *p;
   struct thread *t;
   char *sp;
 
   acquire(&ptable.lock);
-  for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++)
+  for(t = process->thread; t < &process->thread[NTHREADS]; t++)
     if(t->state == UNUSED)
       goto found;
   release(&ptable.lock);
@@ -105,11 +110,9 @@ found:
   memset(t->context, 0, sizeof *t->context);
   t->context->eip = (uint)forkret;
   
-  if (createProc) {
-    p = allocproc();
-    t->proc = p;
-  }
+  t->proc = process;
 
+  
   return t;
 }
 
@@ -120,9 +123,10 @@ void
 userinit(void)
 {
   struct thread *t;
+  struct proc *p;
   extern char _binary_initcode_start[], _binary_initcode_size[];
-  
-  t = allocthread(1);
+  p = allocproc();
+  t = allocthread(p);
     
   initproc = t->proc;
   if((t->proc->pgdir = setupkvm()) == 0)
@@ -183,10 +187,11 @@ fork(void)
   struct proc *np;
   struct thread *nt;
   // Allocate process.
-  if((nt = allocthread(1)) == 0)
+  if((np = allocproc()) == 0)
     return -1;
   
-  np = nt->proc;
+  if((nt = allocthread(np)) == 0)
+    return -1;
 
   // Copy process state from p.
   if((np->pgdir = copyuvm(PROC->pgdir, PROC->sz)) == 0){
@@ -257,20 +262,18 @@ exit(void)
     panic("init exiting");
   
   // Go over all threads of curent proccess, and kill them.
-  for (t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
-    if (t->proc == PROC) {
+  for(t = PROC->thread; t < &PROC->thread[NTHREADS]; t++) {
       if (t != thread) {
 	if (t->state == RUNNING) {
 	  anotherThreadIsAlsoRunning = 1;
 	}
-      }
+      
     }
   }
   
   if (anotherThreadIsAlsoRunning) {
   // Go over all threads of curent proccess, and kill them.
-    for (t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
-      if (t->proc == PROC) {
+    for(t = PROC->thread; t < &PROC->thread[NTHREADS]; t++) {
 	if (t != thread) {
 	  if (t->state == RUNNING) {
 	    t->killed = 1;
@@ -279,7 +282,6 @@ exit(void)
 	    t->state = UNUSED;
 	  }
 	}
-      }
     }
     
     thread->state = UNUSED;
@@ -317,15 +319,13 @@ exit(void)
   }
   
   // Go over all threads of curent proccess, and kill them.
-  for (t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
-    if (t->proc == PROC) {
+  for(t = PROC->thread; t < &PROC->thread[NTHREADS]; t++) {
       if (t != thread) {
 	if (t->state == RUNNING) {
 	  // TODO: this thread maybe running on a different CPU.
 	}
 	cleanTread(t);
       }
-    }
   }
   // Jump into the scheduler, never to return.
   PROC->state = ZOMBIE;
@@ -393,13 +393,14 @@ scheduler(void)
     acquire(&ptable.lock);
     
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
-      for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++){
+      for(t = p->thread; t < &p->thread[NTHREADS]; t++){
 	if(p != t->proc || p->state != RUNNABLE || t->state != RUNNABLE)
 	  continue;
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
       thread = t;
+      //cprintf("Sched select - %s : %d\n",thread->proc->name, thread->proc->pid);
       switchuvm(t->proc);
       t->state = RUNNING;
       swtch(&cpu->scheduler, t->context);
@@ -410,6 +411,8 @@ scheduler(void)
      
     }
     }
+    
+    
     
     release(&ptable.lock);
 
@@ -510,10 +513,12 @@ static void
 wakeup1(void *chan)
 {
   struct thread *t;
-
-  for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++)
-    if(t->state == SLEEPING && t->chan == chan)
-      t->state = RUNNABLE;
+  struct proc *p;
+      
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) 
+      for(t = p->thread; t < &p->thread[NTHREADS]; t++)
+	if(t->state == SLEEPING && t->chan == chan)
+	  t->state = RUNNABLE;
 }
 
 // Wake up all processes sleeping on chan.
@@ -532,17 +537,20 @@ int
 kill(int pid)
 {
   struct thread *t;
-
+  struct proc *p;
   acquire(&ptable.lock);
-  for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++){
-    if(t->proc->pid == pid){
-      t->proc->killed = 1;
-      t->killed = 1;
-      // Wake process from sleep if necessary.
-      if(t->state == SLEEPING)
-        t->state = RUNNABLE;
-      release(&ptable.lock);
-      //return 0;
+      
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+      for(t = p->thread; t < &p->thread[NTHREADS]; t++){
+	if(t->proc->pid == pid){
+	  t->proc->killed = 1;
+	  t->killed = 1;
+	  // Wake process from sleep if necessary.
+	  if(t->state == SLEEPING)
+	    t->state = RUNNABLE;
+	  release(&ptable.lock);
+	  //return 0;
+      }
     }
   }
   release(&ptable.lock);
@@ -594,8 +602,8 @@ procdump(void)
 void killThreadsOfCurrentProc() {
     struct thread *t;
     acquire(&ptable.lock);
-    for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
-	if (t != thread && t->proc == PROC) { // Not the current thread, but of the same process.
+      for(t = PROC->thread; t < &PROC->thread[NTHREADS]; t++){ 
+	if (t != thread) { // Not the current thread.
 
 	  if (t->state == RUNNING) {
 	    // TODO: this thread is running on a different CPU, handle this.
@@ -603,7 +611,6 @@ void killThreadsOfCurrentProc() {
 	  t->killed = 1;
 	  if(t->state == SLEEPING)
 	    t->state = RUNNABLE;
-	   release(&ptable.lock);
 	}
     }
      release(&ptable.lock);
@@ -612,7 +619,7 @@ void killThreadsOfCurrentProc() {
 int kthread_create( void*(*start_func)(), void* stack, uint stack_size ) {
   struct thread *t;
   
-  if((t = allocthread(0)) == 0)
+  if((t = allocthread(PROC)) == 0)
     return -1;
   
   memmove(t->tf, thread->tf, sizeof(*t->tf));
@@ -632,12 +639,13 @@ void kthread_exit(void) {
   int procHasOtherThreads = 0;
   struct thread *t;
   acquire(&ptable.lock);
-  for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
-      if (t != thread && t->state != UNUSED && t->proc == thread->proc) {
-	procHasOtherThreads = 1;
-	break;
+      
+      for(t = PROC->thread; t < &PROC->thread[NTHREADS]; t++){ 
+	if (t != thread && t->state != UNUSED) {
+	  procHasOtherThreads = 1;
+	  break;
+	}
       }
-  }
 
   thread->state = UNUSED;
   
@@ -655,11 +663,14 @@ void kthread_exit(void) {
 
 int kthread_join(int thread_id) {
   struct thread *t;
+  struct proc *p;
   int threadExists = 0;
 
   acquire(&ptable.lock);
   for(;;){
-     for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
+         
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+      for(t = p->thread; t < &p->thread[NTHREADS]; t++) {
       if(t->tid != thread_id)
         continue;
       threadExists = 1;
@@ -668,7 +679,7 @@ int kthread_join(int thread_id) {
         release(&ptable.lock);
         return 0;
       }
-      
+      }
       break;
     }
 
