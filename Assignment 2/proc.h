@@ -95,3 +95,22 @@ struct thread {
 
 void killThreadsOfCurrentProcExceptMe();
 void exit1(void);
+
+
+//----------- mutexes -----------
+// Mutex
+
+enum mutexstate { M_NOT_ALLOCATED, M_ALLOCATED };
+
+struct mutex {
+  struct spinlock mutexLock;
+  uint state;		//general
+  uint mId;		//general
+  
+  struct spinlock queueLock;
+  uint tid;			// queuelock
+  uint currentHolder;		// queuelock
+  uint nextInLineHolder;	// queuelock
+  
+  uint arrayIndex;
+};

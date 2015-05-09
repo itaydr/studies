@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "kthread.h"
 
 #define MAX_NTHREAD NTHREADS * NPROC
 
@@ -20,10 +21,17 @@ struct {
   struct thread thread[MAX_NTHREAD];
 } ttable;
 
+struct {
+  struct spinlock lock;
+  struct mutex mutex[MAX_MUTEXES];
+} mtable;
+
+
 static struct proc *initproc;
 
 int nextpid = 1;
 int nexttid = 1;
+int nextmid = 1;
 extern void forkret(void);
 extern void trapret(void);
 
@@ -33,13 +41,27 @@ void
 pinit(void)
 {
   struct proc *p;
+  struct mutex *m;
+  uint i = 0;
 //   struct thread * t;
   
   initlock(&ptable.lock, "ptable");
+  initlock(&mtable.lock, "mtable");
 //   initlock(&ttable.lock, "ttable");
   
    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
      initlock(&p->pLock, "pLock"); 
+   }
+   
+   for(m = mtable.mutex; m < &mtable.mutex[MAX_MUTEXES]; m++) {
+     initlock(&m->mutexLock, "mLock");
+     initlock(&m->queueLock, "qLock");
+     m->tid = -1;
+     m->state = M_NOT_ALLOCATED;
+     
+     m->currentHolder 		= 0;
+     m->nextInLineHolder 	= 0;
+     m->arrayIndex 		= i++;
    }
 }
 
@@ -661,4 +683,135 @@ int kthread_join(int thread_id) {
   }
   release(&ptable.lock);
   return 0;
+}
+
+
+//--------------------- mutexes ----------------
+int kthread_mutex_alloc() {
+  struct mutex *m;
+  int found = -1;
+  acquire(&mtable.lock);
+  
+  for(m = mtable.mutex; m < &mtable.mutex[MAX_MUTEXES]; m++) {
+    if ( m->state == M_NOT_ALLOCATED ) {
+      m->state = M_ALLOCATED;
+      m->mId = nextmid++;
+      m->tid = -1;
+      found = m->mId;
+      break;
+    }
+   }
+   
+   release(&mtable.lock);
+   
+   return found;
+}
+
+int kthread_mutex_dealloc(int mutex_id) {
+  struct mutex *m;
+  int found = -1;
+  acquire(&mtable.lock);
+  
+  for(m = mtable.mutex; m < &mtable.mutex[MAX_MUTEXES]; m++) {
+    if ( m->state == M_ALLOCATED && m->mId == mutex_id && -1 == m->tid) {
+      m->state = M_NOT_ALLOCATED;
+      m->mId = -1;
+      found = 0;
+      break;
+    }
+   }
+   
+   release(&mtable.lock);
+   
+   return found;
+}
+int kthread_mutex_lock(int mutex_id) {
+  struct mutex *m;
+  int found = 0;
+  int sleepNum = 0;
+  struct spinlock *lk;
+  acquire(&mtable.lock);
+  
+  for(m = mtable.mutex; m < &mtable.mutex[MAX_MUTEXES]; m++) {
+    if ( m->state == M_ALLOCATED && m->mId == mutex_id ) { //&& -1 == m->tid) {
+      found = 1;
+      break;
+    }
+   }
+   
+   if ( found == 0 ) {   // case no such mutex
+     release(&mtable.lock);
+     return -1;
+   }
+   
+   acquire(&m->queueLock);
+   
+   if ( m->tid == thread->tid ) {   // case we already own the lock
+     release(&m->queueLock);
+     release(&mtable.lock);
+     return -1;
+   }
+  
+  release(&mtable.lock);
+  
+  // prepare sleep
+  sleepNum = (m->arrayIndex*MAX_NTHREAD + m->nextInLineHolder);
+  m->nextInLineHolder = (m->nextInLineHolder + 1) % MAX_NTHREAD;
+  
+  lk = &m->mutexLock;
+  
+  while(xchg(&lk->locked, 1) != 0) {
+    if(thread->killed){
+      release(&m->queueLock);
+      return -1;
+    }
+    sleep((void*)sleepNum, &m->queueLock);
+  }
+  
+  m->tid = thread->tid;
+  
+  release(&m->queueLock);
+  
+  return 0;
+}
+int kthread_mutex_unlock(int mutex_id) {
+  struct mutex *m;
+  int found = 0;
+  struct spinlock *lk;
+  int sleepNum = 0;
+  
+  acquire(&mtable.lock);
+  
+  for(m = mtable.mutex; m < &mtable.mutex[MAX_MUTEXES]; m++) {
+    if ( m->state == M_ALLOCATED && m->mId == mutex_id ) { //&& -1 == m->tid) {
+      found = 1;
+      break;
+    }
+   }
+   
+   if ( found == 0  || m->tid == -1) {   // case no such mutex or it is not owned
+     release(&mtable.lock);
+     return -1;
+   }
+      
+  acquire(&m->queueLock);
+  
+  release(&mtable.lock);
+  
+  // free the lock
+  lk = &m->mutexLock;
+  m->tid = -1;
+  xchg(&lk->locked, 0);
+  
+  
+  m->currentHolder = (m->currentHolder + 1) % MAX_NTHREAD;
+ 
+  sleepNum = m->arrayIndex*MAX_NTHREAD + m->currentHolder;
+  wakeup((void*) sleepNum);
+  release(&m->queueLock);
+  
+  return 0;
+}
+int kthread_mutex_yieldlock(int mutex_id1, int mutex_id2) {
+    return 0;
 }

@@ -126,7 +126,7 @@ void 		kthread_exit(void);
 int 		kthread_join(int);
 int 		kthread_mutex_alloc(void);
 int 		kthread_mutex_dealloc(int);
-int		 kthread_mutex_lock(int);
+int		kthread_mutex_lock(int);
 int 		kthread_mutex_unlock(int);
 int 		kthread_mutex_yieldlock(int, int);
 
