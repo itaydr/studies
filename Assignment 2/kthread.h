@@ -1,3 +1,7 @@
+#ifndef kthread_h
+#define kthread_h
+
+
 #define MAX_STACK_SIZE 4000
 #define MAX_MUTEXES 64
 
@@ -15,3 +19,5 @@ int kthread_mutex_dealloc(int mutex_id);
 int kthread_mutex_lock(int mutex_id);
 int kthread_mutex_unlock(int mutex_id);
 int kthread_mutex_yieldlock(int mutex_id1, int mutex_id2);
+
+#endif
