@@ -9,6 +9,7 @@
 
 #define MAX_NTHREAD NTHREADS * NPROC
 
+void cleanTread (struct thread *t);
 
 struct {
   struct spinlock lock;
@@ -16,7 +17,6 @@ struct {
 } ptable;
 
 struct {
-  struct spinlock lock;
   struct thread thread[MAX_NTHREAD];
 } ttable;
 
@@ -33,8 +33,10 @@ void
 pinit(void)
 {
   struct proc *p;
+//   struct thread * t;
+  
   initlock(&ptable.lock, "ptable");
-  initlock(&ttable.lock, "ttable");
+//   initlock(&ttable.lock, "ttable");
   
    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
      initlock(&p->pLock, "pLock"); 
@@ -73,9 +75,14 @@ allocthread(int createProc)
   char *sp;
 
   acquire(&ptable.lock);
-  for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++)
-    if(t->state == UNUSED)
+  for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
+     if(t->state == ZOMBIE) {
+       cleanTread(t);
+     }
+    if(t->state == UNUSED) {
       goto found;
+    }
+  }
   release(&ptable.lock);
   return 0;
 
@@ -223,7 +230,8 @@ fork(void)
 
 void
 cleanTread (struct thread *t) {
-   //if (t) kfree(t->kstack);
+   if (t->kstack) 
+     kfree(t->kstack);
    t->kstack = 0;
    t->state = UNUSED;
    t->tid = 0;
@@ -249,44 +257,13 @@ void
 exit(void)
 {
   struct proc *p;
-  struct thread *t;
-  int fd, anotherThreadIsAlsoRunning = 0;
+  int fd;
 
   if(PROC == initproc)
     panic("init exiting");
   
   // Go over all threads of curent proccess, and kill them.
-  for (t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
-    if (t->proc == PROC) {
-      if (t != thread) {
-	if (t->state == RUNNING) {
-	  anotherThreadIsAlsoRunning = 1;
-	}
-      }
-    }
-  }
-  
-  if (anotherThreadIsAlsoRunning) {
-  // Go over all threads of curent proccess, and kill them.
-    for (t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
-      if (t->proc == PROC) {
-	if (t != thread) {
-	  if (t->state == RUNNING) {
-	    t->killed = 1;
-	  }
-	  else {
-	    t->state = UNUSED;
-	  }
-	}
-      }
-    }
-    
-    thread->state = UNUSED;
-    sched();
-    
-    return;
-  }
-  
+  killThreadsOfCurrentProcExceptMe();
 
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
@@ -315,20 +292,9 @@ exit(void)
     }
   }
   
-  // Go over all threads of curent proccess, and kill them.
-  for (t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
-    if (t->proc == PROC) {
-      if (t != thread) {
-	if (t->state == RUNNING) {
-	  // TODO: this thread maybe running on a different CPU.
-	}
-	cleanTread(t);
-      }
-    }
-  }
   // Jump into the scheduler, never to return.
   PROC->state = ZOMBIE;
-  thread->state = UNUSED;
+  thread->state = ZOMBIE;
   sched();
   panic("zombie exit");
 }
@@ -354,7 +320,6 @@ wait(void)
         // Found one.
         pid = p->pid;
         cleanProccess(p);
-	// TODO: when should the current thread be cleared?
         release(&ptable.lock);
         return pid;
       }
@@ -531,12 +496,15 @@ int
 kill(int pid)
 {
   struct thread *t;
+  int found = -1;
 
   acquire(&ptable.lock);
   for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++){
     if(t->proc->pid == pid){
+      found = 0;
       t->proc->killed = 1;
       t->killed = 1;
+      
       // Wake process from sleep if necessary.
       if(t->state == SLEEPING)
         t->state = RUNNABLE;
@@ -545,7 +513,8 @@ kill(int pid)
     }
   }
   release(&ptable.lock);
-  return -1;
+  
+  return found;
 }
 
 //PAGEBREAK: 36
@@ -590,22 +559,22 @@ procdump(void)
 
 // Threads
 
-void killThreadsOfCurrentProc() {
+void killThreadsOfCurrentProcExceptMe() {
     struct thread *t;
     acquire(&ptable.lock);
     for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
 	if (t != thread && t->proc == PROC) { // Not the current thread, but of the same process.
-
-	  if (t->state == RUNNING) {
-	    // TODO: this thread is running on a different CPU, handle this.
-	  }
 	  t->killed = 1;
 	  if(t->state == SLEEPING)
 	    t->state = RUNNABLE;
-	   release(&ptable.lock);
 	}
     }
-     release(&ptable.lock);
+    release(&ptable.lock);
+    for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
+	if (t->proc == PROC && t != thread) { // Not the current thread, but of the same process.
+	    kthread_join(t->tid);
+	}
+    }
 }
 
 int kthread_create( void*(*start_func)(), void* stack, uint stack_size ) {
@@ -618,12 +587,14 @@ int kthread_create( void*(*start_func)(), void* stack, uint stack_size ) {
   if((t = allocthread(0)) == 0)
     return -1;
   
+  acquire(&ptable.lock);
   memmove(t->tf, thread->tf, sizeof(*t->tf));
   t->tf->eip=(uint)start_func;
   t->tf->esp=(uint)stack+stack_size;
   t->proc = PROC;
   t->state = RUNNABLE;
   t->proc->numberOfThreads++;
+  release(&ptable.lock);
   
   return t->tid;
 }
@@ -633,34 +604,23 @@ int kthread_id(void) {
 }
 
 void kthread_exit(void) {
-  int procHasOtherThreads = 0;
-  struct thread *t;
+//   int procHasOtherThreads = 0;
   
   acquire(&ptable.lock);
-  for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
-      if (t != thread && t->state != UNUSED && t->proc == thread->proc) {
-	procHasOtherThreads = 1;
-	break;
-      }
-  }
 
-
-  
   // Other threads might have called join on us.
   wakeup1(thread);
   
   // If no other threads - kill the proc.
-  if (procHasOtherThreads == 0) {
+  if (PROC->numberOfThreads == 1) {
      exit();
   }
   
-
   PROC->numberOfThreads--;
-  thread->state = UNUSED;
-  cleanTread(thread);
+  thread->state = ZOMBIE;
+//   cleanTread(thread);
   
   sched();
-  
 }
 
 int kthread_join(int thread_id) {
@@ -673,7 +633,7 @@ int kthread_join(int thread_id) {
       if(t->tid != thread_id)
         continue;
       threadExists = 1;
-      if(t->state == UNUSED){
+      if(t->state == ZOMBIE){
 	cleanTread(t);
         release(&ptable.lock);
         return 0;

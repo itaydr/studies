@@ -93,4 +93,4 @@ struct thread {
 //   fixed-size stack
 //   expandable heap
 
-void killThreadsOfCurrentProc();
+void killThreadsOfCurrentProcExceptMe();

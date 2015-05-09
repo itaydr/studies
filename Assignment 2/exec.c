@@ -32,6 +32,8 @@ exec(char *path, char **argv)
   if(elf.magic != ELF_MAGIC)
     goto bad;
 
+  killThreadsOfCurrentProcExceptMe();
+  
   if((pgdir = setupkvm()) == 0)
     goto bad;
 
@@ -85,8 +87,6 @@ exec(char *path, char **argv)
     if(*s == '/')
       last = s+1;
   safestrcpy(PROC->name, last, sizeof(PROC->name));
-
-  killThreadsOfCurrentProc();
   
   // Commit to the user image.
   oldpgdir = PROC->pgdir;
