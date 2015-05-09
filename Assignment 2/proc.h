@@ -5,7 +5,7 @@
 #define NTHREADS  16
 
 #define PROC thread->proc
-#define THREADS PROC->ttable.thread
+
 
 
 // Per-CPU state
@@ -59,20 +59,6 @@ struct context {
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
-// Thread
-struct thread {
-  struct proc *proc;		// Pointer to owner proc.
-  char *kstack;                // Bottom of kernel stack for this thread
-  enum procstate state;        // Thread state
-  int tid;                     // Thread ID
-  struct trapframe *tf;        // Trap frame for current syscall
-  void *chan;                  // If non-zero, sleeping on chan
-  int killed;                  // If non-zero, have been killed
-  char name[16];               // Thread name (debugging)
-  struct context *context;     // swtch() here to run process
-};
-
-
 // Per-process state
 struct proc {
   uint sz;                     // Size of process memory (bytes)
@@ -85,7 +71,19 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   struct spinlock pLock;
-  struct thread *thread;
+};
+
+// Thread
+struct thread {
+  struct proc *proc;		// Pointer to owner proc.
+  char *kstack;                // Bottom of kernel stack for this thread
+  enum procstate state;        // Thread state
+  int tid;                     // Thread ID
+  struct trapframe *tf;        // Trap frame for current syscall
+  void *chan;                  // If non-zero, sleeping on chan
+  int killed;                  // If non-zero, have been killed
+  char name[16];               // Thread name (debugging)
+  struct context *context;     // swtch() here to run process
 };
 
 // Process memory is laid out contiguously, low addresses first:
