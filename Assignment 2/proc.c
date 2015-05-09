@@ -108,6 +108,7 @@ found:
   if (createProc) {
     p = allocproc();
     t->proc = p;
+    p->numberOfThreads = 1;
   }
 
   return t;
@@ -142,8 +143,6 @@ userinit(void)
 
   t->proc->cwd = namei("/");
 
-  t->proc->state = RUNNABLE;
-  // Never Reached
   t->state = RUNNABLE;
 }
 
@@ -215,7 +214,6 @@ fork(void)
 
   // lock to force the compiler to emit the np->state write last.
   acquire(&ptable.lock);
-  np->state = RUNNABLE;
   nt->state = RUNNABLE;
   release(&ptable.lock);
   
@@ -225,7 +223,7 @@ fork(void)
 
 void
 cleanTread (struct thread *t) {
-   if (t) kfree(t->kstack);
+   //if (t) kfree(t->kstack);
    t->kstack = 0;
    t->state = UNUSED;
    t->tid = 0;
@@ -241,6 +239,7 @@ void cleanProccess(struct proc *p) {
         p->parent = 0;
         p->name[0] = 0;
         p->killed = 0;
+	p->numberOfThreads = 0;
 }
 
 // Exit the current process.  Does not return.
@@ -394,7 +393,7 @@ scheduler(void)
     
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
       for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++){
-	if(p != t->proc || p->state != RUNNABLE || t->state != RUNNABLE)
+	if(p != t->proc || t->state != RUNNABLE)
 	  continue;
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -612,6 +611,10 @@ void killThreadsOfCurrentProc() {
 int kthread_create( void*(*start_func)(), void* stack, uint stack_size ) {
   struct thread *t;
   
+  if (thread->proc->numberOfThreads == NTHREADS) {
+      return -1;
+  }
+  
   if((t = allocthread(0)) == 0)
     return -1;
   
@@ -620,6 +623,7 @@ int kthread_create( void*(*start_func)(), void* stack, uint stack_size ) {
   t->tf->esp=(uint)stack+stack_size;
   t->proc = PROC;
   t->state = RUNNABLE;
+  t->proc->numberOfThreads++;
   
   return t->tid;
 }
@@ -631,6 +635,7 @@ int kthread_id(void) {
 void kthread_exit(void) {
   int procHasOtherThreads = 0;
   struct thread *t;
+  
   acquire(&ptable.lock);
   for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
       if (t != thread && t->state != UNUSED && t->proc == thread->proc) {
@@ -639,7 +644,7 @@ void kthread_exit(void) {
       }
   }
 
-  thread->state = UNUSED;
+
   
   // Other threads might have called join on us.
   wakeup1(thread);
@@ -648,7 +653,12 @@ void kthread_exit(void) {
   if (procHasOtherThreads == 0) {
      exit();
   }
+  
 
+  PROC->numberOfThreads--;
+  thread->state = UNUSED;
+  cleanTread(thread);
+  
   sched();
   
 }
