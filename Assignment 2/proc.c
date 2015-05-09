@@ -813,5 +813,62 @@ int kthread_mutex_unlock(int mutex_id) {
   return 0;
 }
 int kthread_mutex_yieldlock(int mutex_id1, int mutex_id2) {
-    return 0;
+  struct mutex* m, m1, m2;
+  int found1 = 0, found2 = 0;
+  int sleepNum = 0;
+  struct spinlock *lk;
+  
+  acquire(&mtable.lock);
+  
+  for(m = mtable.mutex; m < &mtable.mutex[MAX_MUTEXES]; m++) {
+    if ( m->state == M_ALLOCATED && m->mId == mutex_id1 ) { //&& -1 == m->tid) {
+      found1 = 1;
+      m1 = m;
+    }
+    if ( m->state == M_ALLOCATED && m->mId == mutex_id2 ) { //&& -1 == m->tid) {
+      found2 = 1;
+      m2 = m;
+    }
+   }
+   m = 0;
+   
+   if ( found1 == 0  || found2 == 0) {   // case no such locks
+     release(&mtable.lock);
+     return -1;
+   }
+   
+   if(mutex_id1 == mutex_id2) { // case it is the same lock
+    return kthread_mutex_unlock(mutex_id1);
+  }
+   
+   acquire(&m->queueLock);
+   
+   if ( m->tid == thread->tid ) {   // case we already own the lock
+     release(&m->queueLock);
+     release(&mtable.lock);
+     return -1;
+   }
+  
+  release(&mtable.lock);
+  
+  // prepare sleep
+  sleepNum = (m->arrayIndex*MAX_NTHREAD + m->nextInLineHolder);
+  m->nextInLineHolder = (m->nextInLineHolder + 1) % MAX_NTHREAD;
+  
+  lk = &m->mutexLock;
+  
+  while(xchg(&lk->locked, 1) != 0) {
+    if(thread->killed){
+      release(&m->queueLock);
+      return -1;
+    }
+    sleep((void*)sleepNum, &m->queueLock);
+  }
+  
+  m->tid = thread->tid;
+  
+  release(&m->queueLock);
+  
+  return 0;
+
 }
