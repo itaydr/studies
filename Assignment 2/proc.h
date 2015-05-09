@@ -94,3 +94,4 @@ struct thread {
 //   expandable heap
 
 void killThreadsOfCurrentProcExceptMe();
+void exit1(void);

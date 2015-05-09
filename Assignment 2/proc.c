@@ -89,6 +89,7 @@ allocthread(int createProc)
 found:
   t->state = EMBRYO;
   t->tid = nexttid++;
+  t->killed = 0;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -250,11 +251,16 @@ void cleanProccess(struct proc *p) {
 	p->numberOfThreads = 0;
 }
 
+
+void
+exit(void) {
+  kthread_exit();
+}
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait() to find out it exited.
 void
-exit(void)
+exit1(void)
 {
   struct proc *p;
   int fd;
@@ -476,8 +482,9 @@ wakeup1(void *chan)
   struct thread *t;
 
   for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++)
-    if(t->state == SLEEPING && t->chan == chan)
+    if(t->state == SLEEPING && t->chan == chan) {
       t->state = RUNNABLE;
+    }
 }
 
 // Wake up all processes sleeping on chan.
@@ -563,7 +570,7 @@ void killThreadsOfCurrentProcExceptMe() {
     struct thread *t;
     acquire(&ptable.lock);
     for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
-	if (t != thread && t->proc == PROC) { // Not the current thread, but of the same process.
+	if (t->tid != thread->tid && t->proc == PROC) { // Not the current thread, but of the same process.
 	  t->killed = 1;
 	  if(t->state == SLEEPING)
 	    t->state = RUNNABLE;
@@ -571,7 +578,7 @@ void killThreadsOfCurrentProcExceptMe() {
     }
     release(&ptable.lock);
     for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
-	if (t->proc == PROC && t != thread) { // Not the current thread, but of the same process.
+	if (t->proc == PROC && t->tid != thread->tid) { // Not the current thread, but of the same process.
 	    kthread_join(t->tid);
 	}
     }
@@ -604,23 +611,24 @@ int kthread_id(void) {
 }
 
 void kthread_exit(void) {
-//   int procHasOtherThreads = 0;
-  
   acquire(&ptable.lock);
 
-  // Other threads might have called join on us.
-  wakeup1(thread);
+  cprintf("Thread %d called kthread_exit \n", thread->tid);
   
+       wakeup1(thread);
+
   // If no other threads - kill the proc.
-  if (PROC->numberOfThreads == 1) {
-     exit();
+  if (PROC->numberOfThreads != 1) {
+     // Other threads might have called join on us.
+     
+      PROC->numberOfThreads--;
+      thread->state = ZOMBIE;
+      sched();
   }
-  
-  PROC->numberOfThreads--;
-  thread->state = ZOMBIE;
-//   cleanTread(thread);
-  
-  sched();
+  else {
+    release(&ptable.lock);
+    exit1();
+  }
 }
 
 int kthread_join(int thread_id) {
@@ -652,6 +660,5 @@ int kthread_join(int thread_id) {
     sleep(t, &ptable.lock);  //DOC: wait-sleep
   }
   release(&ptable.lock);
-  
   return 0;
 }

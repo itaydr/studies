@@ -92,7 +92,7 @@ trap(struct trapframe *tf)
 // 	      "eip 0x%x addr 0x%x--kill proc\n",
 // 	      PROC->pid, PROC->name, tf->trapno, tf->err, cpu->id, tf->eip, 
 // 	      rcr2());
-      PROC->killed = 1;
+      thread->killed = 1;
     }
   }
 

@@ -16,7 +16,7 @@ sys_fork(void)
 int
 sys_exit(void)
 {
-  exit();
+  exit1();
   return 0;  // not reached
 }
 
@@ -67,7 +67,7 @@ sys_sleep(void)
   acquire(&tickslock);
   ticks0 = ticks;
   while(ticks - ticks0 < n){
-    if(PROC->killed){
+    if(thread->killed){
       release(&tickslock);
       return -1;
     }
