@@ -2,7 +2,9 @@
 #define	HOARE_COND_H
 
 typedef struct hoare_cond {
-    //Your code here...
+  int mutexId;
+  int counts_mutex;
+  int counts;
 } hoare_cond_t;
 
 hoare_cond_t* hoare_cond_alloc();
@@ -11,4 +13,3 @@ int hoare_cond_wait(hoare_cond_t*, int);
 int hoare_cond_signal(hoare_cond_t*, int);
 
 #endif	/* HOARE_COND_H */
-

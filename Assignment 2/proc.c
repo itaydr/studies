@@ -8,8 +8,6 @@
 #include "spinlock.h"
 #include "kthread.h"
 
-#define MAX_NTHREAD NTHREADS * NPROC
-
 void cleanTread (struct thread *t);
 
 struct {
@@ -819,9 +817,11 @@ int kthread_mutex_unlock(int mutex_id) {
 }
 
 int kthread_mutex_yieldlock(int mutex_id1, int mutex_id2) {
-  struct mutex* m, m1, m2;
+  struct mutex* m;
+  struct mutex* m1;
+  struct mutex* m2;
   int found1 = 0, found2 = 0;
-  struct spinlock *lk;
+//   struct spinlock *lk;
   
   acquire(&mtable.lock);
   
@@ -853,19 +853,19 @@ int kthread_mutex_yieldlock(int mutex_id1, int mutex_id2) {
   // Find a thread which is waiting on lock 2
   acquire(&m2->queueLock);
    
-   if ( !( (m2.nextInLineHolder - m2.currentHolder) == 1 ||
-	((m2.currentHolder == MAX_NTHREAD-1) && (m2.nextInLineHolder == 0))    )) {   // case at least one is waiting
+   if ( !( (m2->nextInLineHolder - m2->currentHolder) == 1 ||
+	((m2->currentHolder == MAX_NTHREAD-1) && (m2->nextInLineHolder == 0))    )) {   // case at least one is waiting
      
      // pass the lock to him
-     m1.tid = m2.threadIDInQueue[(m2.currentHolder+1) % MAX_NTHREAD];
+     m1->tid = m2->threadIDInQueue[(m2->currentHolder+1) % MAX_NTHREAD];
      release(&m2->queueLock);
      release(&m1->queueLock);
-     kthread_mutex_unlock(m2.mId);
+     kthread_mutex_unlock(m2->mId);
    } else {
      // no one is waiting
      release(&m2->queueLock);
      release(&m1->queueLock);
-     kthread_mutex_unlock(m1.mId);
+     kthread_mutex_unlock(m1->mId);
    }
    
   return 0;

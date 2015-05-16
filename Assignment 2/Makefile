@@ -173,6 +173,9 @@ UPROGS=\
 	_wc\
 	_zombie\
 	_test\
+	_mesa_cond\
+	_hoare_cond\
+
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
