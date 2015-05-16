@@ -8,6 +8,9 @@ mesa_cond_t* mesa_cond_alloc() {
   
   mesa_cv->mutexId = kthread_mutex_alloc();
   if ( -1 ==mesa_cv->mutexId  || (mesa_cv->counts_mutex = kthread_mutex_alloc()) == -1) {
+    if (-1 != mesa_cv->mutexId) {
+      kthread_mutex_dealloc(mesa_cv->mutexId);
+    }
     free(mesa_cv);
     return 0;
   }

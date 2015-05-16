@@ -17,6 +17,9 @@ hoare_cond_t* hoare_cond_alloc() {
   
   hoare_cv->mutexId = kthread_mutex_alloc();
   if ( -1 ==hoare_cv->mutexId  || (hoare_cv->counts_mutex = kthread_mutex_alloc()) == -1) {
+    if (-1 != hoare_cv->mutexId) {
+      kthread_mutex_dealloc(hoare_cv->mutexId);
+    }
     free(hoare_cv);
     return 0;
   }
