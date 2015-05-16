@@ -111,6 +111,7 @@ struct mutex {
   uint tid;			// queuelock
   uint currentHolder;		// queuelock
   uint nextInLineHolder;	// queuelock
+  uint threadIDInQueue[MAX_NTHREAD]; // array conatin all thread id that aew waiting for the mutex
   
   uint arrayIndex;
 };
