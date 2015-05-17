@@ -16,7 +16,6 @@ mesa_cond_t* mesa_cond_alloc() {
   }
 
   mesa_cv->counts = 0;
-  printf(1,"mesa_cv->mutexId - alloc and locking: %d\n", mesa_cv->mutexId);
   kthread_mutex_lock(mesa_cv->mutexId);
   
   return mesa_cv;

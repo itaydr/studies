@@ -653,31 +653,12 @@ void kthread_exit(void) {
 
 int kthread_join(int thread_id) {
   struct thread *t;
-  struct mutex *m;
-  int i;
+//   struct mutex *m;
+//   int i;
   int threadExists = 0;
 
   acquire(&ptable.lock);
-  
-  acquire(&mtable.lock);
-  for(m = mtable.mutex; m < &mtable.mutex[MAX_MUTEXES]; m++) {
-    if ( m->state == M_ALLOCATED ) {
-      cprintf("Mutex info:\n");
-      cprintf("Mutex id:\t %d\n", m->mId);
-      cprintf("Mutex taken by id:\t %d\n", m->tid);
-      cprintf("QUEUE:\t");
-      
-      cprintf("LOCK - cur: %d, next: %d - printing queue for lock: %d\t\t", m->currentHolder, m->nextInLineHolder, m->mId);
-      for(i = m->currentHolder; i < m->currentHolder + 5; i++) {
-	cprintf(" %d ", m->threadIDInQueue[i]);
-      }
-      cprintf("\n");
-      
-    }
-   }
-  
-  
-  release(&mtable.lock);
+ 
   
   for(;;){
      for(t = ttable.thread; t < &ttable.thread[MAX_NTHREAD]; t++) {
@@ -753,7 +734,7 @@ int kthread_mutex_dealloc(int mutex_id) {
 int kthread_mutex_lock(int mutex_id) {
   struct mutex *m;
   int found = 0;
-  int i;
+//   int i;
   int sleepNum = 0;
   struct spinlock *lk;
   acquire(&mtable.lock);
@@ -783,19 +764,9 @@ int kthread_mutex_lock(int mutex_id) {
   // prepare sleep
   sleepNum = (m->arrayIndex*MAX_NTHREAD + m->nextInLineHolder);
   m->threadIDInQueue[m->nextInLineHolder] = thread->tid;
-//   cprintf("before: %d\n", m->nextInLineHolder);
   m->nextInLineHolder = (m->nextInLineHolder + 1);
-//   cprintf("in between: %d\n", m->nextInLineHolder);
   m->nextInLineHolder = m->nextInLineHolder % MAX_NTHREAD;
-//   cprintf("after: %d\n", m->nextInLineHolder);
-   cprintf("\tLOCK - queue for lock: %d  ", m->mId);
-   for(i = m->currentHolder; i < m->currentHolder + 5; i++) {
-     cprintf(" %d ", m->threadIDInQueue[i]);
-   }
-   cprintf("\n");
-  
-   cprintf(" vvvvv thread: %d trying to get lock: %d\n", thread->tid, m->mId);
-  
+
   lk = &m->mutexLock;
   
   while(xchg(&lk->locked, 1) != 0) {
@@ -803,14 +774,11 @@ int kthread_mutex_lock(int mutex_id) {
       release(&m->queueLock);
       return -1;
     }
-//     cprintf("$$$$$$$$$$$$$$$$$$$$$$$$$$ thread %d going to sleep on event waiting for lock %d\n", thread->tid, m->mId);
     sleep((void*)sleepNum, &m->queueLock);
-//     cprintf("$$$$$$$$$$$$$$$$$$$$$$$$$$ thread %d woke up from sleep to take lock %d\n", thread->tid, m->mId);
   }
   
   m->tid = thread->tid;
-  cprintf(" ^^^^^ thread: %d woke up and took lock: %d\n", thread->tid, m->mId);
-//   cprintf("****************Thread Id: %d took lokc: %d\n", m->tid, m->mId );
+
   
   release(&m->queueLock);
   
@@ -819,7 +787,7 @@ int kthread_mutex_lock(int mutex_id) {
 int kthread_mutex_unlock(int mutex_id) {
   struct mutex *m;
   int found = 0;
-  int i;
+//   int i;
   struct spinlock *lk;
   int sleepNum = 0;
   
@@ -845,15 +813,7 @@ int kthread_mutex_unlock(int mutex_id) {
   lk = &m->mutexLock;
   m->tid = -1;
   m->threadIDInQueue[m->currentHolder] = -1;
-   cprintf("****************Thread Id: %d RELEASED lokc: %d\n", thread->tid, m->mId );
-  
-   cprintf("\t\tREL - queue for lock: %d\t", m->mId);
-   for(i = m->currentHolder; i < m->currentHolder + 5; i++) {
-     cprintf(" %d ", m->threadIDInQueue[i]);
-   }
-   cprintf("\n");
-  
-  
+    
   xchg(&lk->locked, 0);
   
   m->currentHolder = (m->currentHolder + 1) % MAX_NTHREAD;
@@ -870,7 +830,7 @@ int kthread_mutex_yieldlock(int mutex_id1, int mutex_id2) {
   struct mutex* m1;
   struct mutex* m2;
   int found1 = 0, found2 = 0;
-  int i;
+//   int i;
 //   struct spinlock *lk;
   
   acquire(&mtable.lock);
@@ -890,16 +850,12 @@ int kthread_mutex_yieldlock(int mutex_id1, int mutex_id2) {
    m = 0;
    
    if ( found1 == 0  || found2 == 0) {   // case no such locks
-      cprintf("we could not find one of the locks...\n");
      return -1;
    }
    
   acquire(&m1->queueLock);
    
   if ( m1->tid != thread->tid ) {   // case we don't have the lock
-     cprintf("m1 tid: %d, but we are %d\n",m1->tid, thread->tid);
-     cprintf("m2 tid: %d\n",m2->tid);
-     cprintf("we do not own lock1!!\n");
      release(&m1->queueLock);
      return -1;
    } else {
@@ -916,23 +872,14 @@ int kthread_mutex_yieldlock(int mutex_id1, int mutex_id2) {
    
    if ( !( (m2->nextInLineHolder - m2->currentHolder) == 1 ||
 	((m2->currentHolder == MAX_NTHREAD-1) && (m2->nextInLineHolder == 0))    )) {   // case at least one is waiting
-     
-     // pass the lock to him
-     cprintf("printing queue for lock: %d\t\t", m->mId);
-     for(i = m2->currentHolder; i < m2->currentHolder + 5; i++) {
-       cprintf(" %d ", m2->threadIDInQueue[i]);
-     }
-     cprintf("\n");
-     
+          
      m1->tid = m2->threadIDInQueue[(m2->currentHolder+1) % MAX_NTHREAD];
      m1->threadIDInQueue[m1->currentHolder] = m1->tid;
-      cprintf("yield lock - we are %d, passing lock to: %d... the lock number is: %d\n", thread->tid, m1->tid, m1->mId);
      release(&m2->queueLock);
      release(&m1->queueLock);
      kthread_mutex_unlock(m2->mId);
    } else {
      // no one is waiting
-     cprintf("yield lock - no one is waiting... normal unlock...we are %d, giving up lock: %d\n", thread->tid, m1->mId);
      release(&m2->queueLock);
      release(&m1->queueLock);
      kthread_mutex_unlock(m1->mId);
