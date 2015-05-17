@@ -3,7 +3,7 @@
 #define NSEGS     7
 // Max number of threads for a proc.
 #define NTHREADS  16
-#define MAX_NTHREAD NTHREADS * NPROC
+#define MAX_NTHREAD (NTHREADS * NPROC)
 #define PROC thread->proc
 
 

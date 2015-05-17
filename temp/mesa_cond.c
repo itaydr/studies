@@ -1,7 +1,7 @@
+#include "mesa_cond.h"
+
 #include "types.h"
 #include "user.h"
-
-#include "mesa_cond.h"
 
 mesa_cond_t* mesa_cond_alloc() {
   mesa_cond_t* mesa_cv = (mesa_cond_t*) malloc( sizeof(mesa_cond_t));
@@ -16,7 +16,6 @@ mesa_cond_t* mesa_cond_alloc() {
   }
 
   mesa_cv->counts = 0;
-  printf(1,"mesa_cv->mutexId - alloc and locking: %d\n", mesa_cv->mutexId);
   kthread_mutex_lock(mesa_cv->mutexId);
   
   return mesa_cv;
@@ -54,7 +53,6 @@ int mesa_cond_wait(mesa_cond_t* mesa_cv, int monitor_mutex) {
   
   kthread_mutex_lock(mesa_cv->mutexId);
   kthread_mutex_lock(monitor_mutex);
-  kthread_mutex_yieldlock(mesa_cv->mutexId, mesa_cv->mutexId);
   
   kthread_mutex_lock(mesa_cv->counts_mutex);
   --mesa_cv->counts;

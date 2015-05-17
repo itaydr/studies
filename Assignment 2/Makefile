@@ -134,7 +134,7 @@ tags: $(OBJS) entryother.S _init
 vectors.S: vectors.pl
 	perl vectors.pl > vectors.S
 
-ULIB = ulib.o usys.o printf.o umalloc.o
+ULIB = ulib.o usys.o printf.o umalloc.o hoare_cond.o hoare_slots_monitor.o mesa_cond.o mesa_slots_monitor.o
 
 _%: %.o $(ULIB)
 	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
@@ -173,8 +173,9 @@ UPROGS=\
 	_wc\
 	_zombie\
 	_test\
-	_mesa_cond\
-	_hoare_cond\
+	_wtf\
+	_slots_hoare\
+	_slots_mesa\
 
 
 fs.img: mkfs README $(UPROGS)

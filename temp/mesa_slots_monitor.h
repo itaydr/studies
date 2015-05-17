@@ -1,14 +1,8 @@
 #ifndef MESA_SLOTS_MONITOR_H
 #define	MESA_SLOTS_MONITOR_H
 
-#include "mesa_cond.h"
-
 typedef struct mesa_slots_monitor {
-  mesa_cond_t *seats_avaliable;
-  mesa_cond_t *all_seats_taken;
-  int seats;
-  int is_done_flag;
-  int monitor_mutex;
+    //Your code here...
 } mesa_slots_monitor_t;
 
 mesa_slots_monitor_t* mesa_slots_monitor_alloc();

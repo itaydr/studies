@@ -1,7 +1,16 @@
+#include "hoare_cond.h"
+
 #include "types.h"
 #include "user.h"
 
-#include "hoare_cond.h"
+/*
+typedef struct hoare_cond {
+  int mutexId;
+  int counts_mutex;
+  int counts;
+} hoare_cond_t;
+
+*/
 
 hoare_cond_t* hoare_cond_alloc() {
   hoare_cond_t* hoare_cv = (hoare_cond_t*) malloc( sizeof(hoare_cond_t));
@@ -51,9 +60,8 @@ int hoare_cond_wait(hoare_cond_t* hoare_cv, int monitor_mutex) {
   
   kthread_mutex_unlock(monitor_mutex);
   kthread_mutex_unlock(hoare_cv->counts_mutex);
-  printf(1,"A CV: %d\n", hoare_cv->counts);
+  
   kthread_mutex_lock(hoare_cv->mutexId);
-  kthread_mutex_yieldlock(hoare_cv->mutexId, hoare_cv->mutexId); // give up the lock
 //   kthread_mutex_lock(monitor_mutex);
   
   kthread_mutex_lock(hoare_cv->counts_mutex);
@@ -68,16 +76,11 @@ int hoare_cond_signal(hoare_cond_t* hoare_cv, int monitor_mutex) {
   }
   
   kthread_mutex_lock(hoare_cv->counts_mutex);
-  
-  printf(1,"Sig CV: %d\n", hoare_cv->counts);
-  
   if ( hoare_cv->counts > 0 ) {
     kthread_mutex_unlock(hoare_cv->counts_mutex);
     if ( -1 == kthread_mutex_yieldlock(monitor_mutex, hoare_cv->mutexId) ) {
-      printf(1,"Sig yield returned -1\n");
       return -1;
     }
-    printf(1,"yield lock returned!!! fight for lock\n");
     kthread_mutex_lock(monitor_mutex);
   } else {
     kthread_mutex_unlock(hoare_cv->counts_mutex);

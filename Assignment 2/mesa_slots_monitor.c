@@ -1,37 +1,43 @@
 #include "types.h"
 #include "user.h"
 
-#include "hoare_slots_monitor.h"
+#include "mesa_slots_monitor.h"
 
 /*
-typedef struct hoare_slots_monitor {
-  hoare_cond seats_avaliable;
-  hoare_cond all_seats_taken;
+typedef struct mesa_slots_monitor {
+  mesa_cond_t *seats_avaliable;
+  mesa_cond_t *all_seats_taken;
   int seats;
   int is_done_flag;
   int monitor_mutex;
-} hoare_slots_monitor_t;
+} mesa_slots_monitor_t;
 */
 
-hoare_slots_monitor_t* hoare_slots_monitor_alloc() {
-  hoare_slots_monitor_t* monitor = (hoare_slots_monitor_t*) malloc(sizeof(hoare_slots_monitor_t));
-   
+mesa_slots_monitor_t* mesa_slots_monitor_alloc() {
+  mesa_slots_monitor_t* monitor = (mesa_slots_monitor_t*) malloc(sizeof(mesa_slots_monitor_t));
+//    mesa_cond_t * temp;
   if (0 == monitor) {
     goto cleanup;
   }
   
-  if ((int)(monitor->seats_avaliable= hoare_cond_alloc()) == -1){
+  if ((int)(monitor->seats_avaliable= mesa_cond_alloc()) == -1){
     goto cleanup;
   }
   
-  if ((int)(monitor->all_seats_taken= hoare_cond_alloc()) == -1){
+  if ((int)(monitor->all_seats_taken= mesa_cond_alloc()) == -1){
     goto cleanup;
   }
   
   if( (int)(monitor->monitor_mutex = kthread_mutex_alloc()) == -1){
     goto cleanup;
   }
-  
+  /*
+  temp = monitor->seats_avaliable;
+  printf("\n\n\t\t seats_avaliable: %d", temp->mutexId);
+  temp = monitor->all_seats_taken;
+  printf("\tall_seats_taken: %d", temp->mutexId);
+  printf(", \t monitor mutex: %d\n\n", monitor.monitor_mutex);
+  */
   monitor->seats = 0;
   monitor->is_done_flag = 0;
   
@@ -42,10 +48,10 @@ cleanup:
     kthread_mutex_dealloc(monitor->monitor_mutex);
   }
   if (monitor && -1 != (int)monitor->seats_avaliable) {
-    hoare_cond_dealloc(monitor->seats_avaliable);
+    mesa_cond_dealloc(monitor->seats_avaliable);
   }
   if (monitor && -1 != (int)monitor->all_seats_taken) {
-    hoare_cond_dealloc(monitor->all_seats_taken);
+    mesa_cond_dealloc(monitor->all_seats_taken);
   }
   if (monitor) {
     free(monitor);
@@ -54,7 +60,7 @@ cleanup:
   return 0;
 }
 
-int hoare_slots_monitor_dealloc(hoare_slots_monitor_t* monitor) {  
+int mesa_slots_monitor_dealloc(mesa_slots_monitor_t* monitor) {  
   int temp;
   
   if ( 0 == monitor ) {
@@ -67,8 +73,8 @@ int hoare_slots_monitor_dealloc(hoare_slots_monitor_t* monitor) {
     return -1;
   }
   
-  hoare_cond_dealloc(monitor->seats_avaliable);
-  hoare_cond_dealloc(monitor->all_seats_taken);
+  mesa_cond_dealloc(monitor->seats_avaliable);
+  mesa_cond_dealloc(monitor->all_seats_taken);
   
   temp = monitor->monitor_mutex;
   
@@ -80,20 +86,20 @@ int hoare_slots_monitor_dealloc(hoare_slots_monitor_t* monitor) {
   return 0;
 }
 
-int hoare_slots_monitor_addslots(hoare_slots_monitor_t* monitor,int seats) {
+int mesa_slots_monitor_addslots(mesa_slots_monitor_t* monitor,int seats) {
   // called by the grader only
   kthread_mutex_lock(monitor->monitor_mutex);
   
-  printf(1,"---Grader getting into function---\n");
+  printf(1,"---Grader getting into add slots function---\n");
   
   if (1 == monitor->is_done_flag) {
     kthread_mutex_unlock(monitor->monitor_mutex);
     return 0;
   }
   
-  if (monitor->seats > 0) {
+  while (0 == monitor->is_done_flag && monitor->seats > 0) {
     printf(1,"\t---Grader getting to sleep\n");
-    hoare_cond_wait(monitor->all_seats_taken, monitor->monitor_mutex);
+    mesa_cond_wait(monitor->all_seats_taken, monitor->monitor_mutex);
     printf(1,"\t---Grader finished to sleep\n");
   } 
   
@@ -105,29 +111,29 @@ int hoare_slots_monitor_addslots(hoare_slots_monitor_t* monitor,int seats) {
     return 0;
   }
   
-  hoare_cond_signal(monitor->seats_avaliable, monitor->monitor_mutex);
+  mesa_cond_signal(monitor->seats_avaliable);
     
   printf(1,"---Grader leaving function---\n");
   kthread_mutex_unlock(monitor->monitor_mutex);
   return 0;
 }
 
-int hoare_slots_monitor_takeslot(hoare_slots_monitor_t* monitor) {
+int mesa_slots_monitor_takeslot(mesa_slots_monitor_t* monitor) {
   kthread_mutex_lock(monitor->monitor_mutex);
-  printf(1,"+: %d\n",monitor->seats);
-  if ( 0 == monitor->seats) {
-    hoare_cond_wait(monitor->seats_avaliable, monitor->monitor_mutex);
+//   printf(1,"+: %d\n",monitor->seats);
+  while ( 0 == monitor->seats) {
+    mesa_cond_wait(monitor->seats_avaliable, monitor->monitor_mutex);
    printf(1,"++++++++student woke up!, currently:\t%d\n",monitor->seats);
   } 
   
   --monitor->seats;
    printf(1,"++++++++student took a seat, currently:\t%d\n",monitor->seats);
- // sleep(100);
+  
   if ( 0 == monitor->seats) {
 //     printf(1,"\n++++++++the grader will get a signal:\t %d\n", monitor->seats);
-    hoare_cond_signal(monitor->all_seats_taken, monitor->monitor_mutex);
+    mesa_cond_signal(monitor->all_seats_taken);
   } else {
-    hoare_cond_signal(monitor->seats_avaliable, monitor->monitor_mutex);
+    mesa_cond_signal(monitor->seats_avaliable);
     printf(1,"++++++++student wignaled to wake up, currently:\t%d\n",monitor->seats);
   }
   printf(1,"++++++++student leaving the function, currently:\t%d\n",monitor->seats);
@@ -136,11 +142,11 @@ int hoare_slots_monitor_takeslot(hoare_slots_monitor_t* monitor) {
   return 0;
 }
 
-int hoare_slots_monitor_stopadding(hoare_slots_monitor_t* monitor) {
+int mesa_slots_monitor_stopadding(mesa_slots_monitor_t* monitor) {
   kthread_mutex_lock(monitor->monitor_mutex);
   
   monitor->is_done_flag = 1;
-  hoare_cond_signal(monitor->all_seats_taken, monitor->monitor_mutex);
+  mesa_cond_signal(monitor->all_seats_taken);
   
   kthread_mutex_unlock(monitor->monitor_mutex);
   return 0;
