@@ -8,6 +8,7 @@
 #include "traps.h"
 #include "spinlock.h"
 
+
 // Interrupt descriptor table (shared by all CPUs).
 struct gatedesc idt[256];
 extern uint vectors[];  // in vectors.S: array of 256 entry pointers
@@ -80,12 +81,35 @@ trap(struct trapframe *tf)
    
   //PAGEBREAK: 13
   default:
+    
+    
     if(proc == 0 || (tf->cs&3) == 0){
+      if ( 14 == tf->trapno) { // && (uint)rcr2() < KERNBASE) { 				// this is a page fault
+	uint target_addr = (uint)rcr2();			// the address we want to access
+	
+ 	if (TLBMap(proc->pgdir, cpu->kpgdir, (void*)target_addr) == 1 ) {	// we have success
+ 	  return;
+ 	}
+	
+	
+      }
+
       // In kernel, it must be our mistake.
       cprintf("unexpected trap %d from cpu %d eip %x (cr2=0x%x)\n",
               tf->trapno, cpu->id, tf->eip, rcr2());
       panic("trap");
     }
+    
+    // TLB implementation
+    if ( 14 == tf->trapno) { 				// this is a page fault
+      uint target_addr = (uint)rcr2();			// the address we want to access
+
+      if (TLBMap(proc->pgdir, cpu->kpgdir, (void*)target_addr) == 1 ) {	// we have success
+	return;
+      } 
+      
+    }
+    
     // In user space, assume process misbehaved.
     cprintf("pid %d %s: trap %d err %d on cpu %d "
             "eip 0x%x addr 0x%x--kill proc\n",
@@ -102,9 +126,10 @@ trap(struct trapframe *tf)
 
   // Force process to give up CPU on clock tick.
   // If interrupts were on while locks held, would need to check nlock.
-  if(proc && proc->state == RUNNING && tf->trapno == T_IRQ0+IRQ_TIMER)
+  if(proc && proc->state == RUNNING && tf->trapno == T_IRQ0+IRQ_TIMER) {// && (ticks % QUANTA) == 0) {
+//     cprintf("\n\nyeiled CS\n\n");
     yield();
-
+  }
   // Check if the process has been killed since we yielded
   if(proc && proc->killed && (tf->cs&3) == DPL_USER)
     exit();

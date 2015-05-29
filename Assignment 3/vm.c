@@ -1,3 +1,4 @@
+
 #include "param.h"
 #include "types.h"
 #include "defs.h"
@@ -55,6 +56,7 @@ walkpgdir(pde_t *pgdir, const void *va, int alloc)
     if(!alloc || (pgtab = (pte_t*)kalloc()) == 0)
       return 0;
     // Make sure all those PTE_P bits are zero.
+//     cprintf("allocated new PTE! it is allocated to vaddr: %x\n", pgtab);
     memset(pgtab, 0, PGSIZE);
     // The permissions here are overly generous, but they can
     // be further restricted by the permissions in the page table 
@@ -157,6 +159,9 @@ kvmalloc(struct cpu *c)
 void
 switchkvm(struct cpu *c)
 {
+  pushcli();
+  clearTLB(cpu->kpgdir);
+  popcli();
   lcr3(v2p(c->kpgdir));   // switch to the kernel page table
 }
 
@@ -172,7 +177,8 @@ switchuvm(struct proc *p)
   ltr(SEG_TSS << 3);
   if(p->pgdir == 0)
     panic("switchuvm: no pgdir");
-  lcr3(v2p(p->pgdir));  // switch to new address space
+  clearTLB(cpu->kpgdir);
+//   lcr3(v2p(p->pgdir));  // switch to new address space
   popcli();
 }
 
@@ -384,3 +390,87 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 //PAGEBREAK!
 // Blank page.
 
+//------------------------------------------- TLB implementation --------------------------------
+uint mappedTLB[2] = {0};
+uint mappedTLBnumber = 0;
+
+
+int TLBMap(pde_t * proc_pgdir, pde_t * ker_pgdir, void* target_va) {
+  pte_t * proc_pte;
+  pte_t * ker_pte;
+  
+  uint temp1;
+  uint temp2;
+  
+//    cprintf("TLBMap start: %d\n", mappedTLBnumber);
+  // find user PTE
+  if((proc_pte = walkpgdir(proc_pgdir, target_va, 0)) == 0) {
+    cprintf("TLBMap - real page fault cause user tried to access invalid vaddr: %x\n", target_va);
+    // error occured, no pte pointing to destination target!
+    return 0;
+  }
+  if ( mappedTLBnumber == 2 ) { // we need to free one cause of the limit
+    temp1 = (uint)p2v(PTE_ADDR(ker_pgdir[PDX(mappedTLB[0])]));
+    temp2 = (uint)p2v(PTE_ADDR(ker_pgdir[PDX(mappedTLB[1])]));
+    if ( temp1 != temp2) { // they are in different pages. free the first page
+		// free the first page
+	kfree(p2v(PTE_ADDR(ker_pgdir[PDX(mappedTLB[0])])));	
+    }
+    // zero the index of first
+    ker_pgdir[PDX(mappedTLB[0])] = 0;
+    // move them
+    mappedTLB[0] = mappedTLB[1];
+    mappedTLB[1] = 0;
+    mappedTLBnumber--;    
+  }
+  
+  // attach to kernel PTE
+  if((ker_pte = walkpgdir(ker_pgdir, target_va, 1)) == 0) {
+    cprintf("TLBMap - ker_pte failed ot be allocated\n");
+    // error occured, no pte pointing to destination target!
+    return 0;
+  }
+  
+  
+  //p2v(PTE_ADDR(ker_pgdir[PDX(target_va)]));
+  *ker_pte = *proc_pte;
+  
+  mappedTLB[mappedTLBnumber++] = (uint)target_va;
+  
+//    cprintf("TLBMap end: %d\n", mappedTLBnumber);
+  return 1;
+}
+
+void clearTLB(pde_t * ker_pgdir) {
+//    cprintf("clearTLB start\n");
+  switch(mappedTLBnumber) {
+    case 0:
+//        cprintf("\tcase 0\n");
+      break;
+    case 1:
+//        cprintf("\tcase 1\n");
+      kfree(p2v(PTE_ADDR(ker_pgdir[PDX(mappedTLB[0])])));
+      ker_pgdir[PDX(mappedTLB[0])] = 0;
+      mappedTLB[0] = 0;
+      break;
+    case 2:
+//        cprintf("\tcase 2\n");
+      if (	p2v(PTE_ADDR(ker_pgdir[PDX(mappedTLB[0])])) !=
+		    p2v(PTE_ADDR(ker_pgdir[PDX(mappedTLB[1])]))) { // they are in different pages.
+	    kfree(p2v(PTE_ADDR(ker_pgdir[PDX(mappedTLB[0])]))); // free the first page
+	    kfree(p2v(PTE_ADDR(ker_pgdir[PDX(mappedTLB[1])]))); // free the second page
+	    ker_pgdir[PDX(mappedTLB[0])] = 0;
+	    ker_pgdir[PDX(mappedTLB[1])] = 0;
+	} else {
+	  kfree(p2v(PTE_ADDR(ker_pgdir[PDX(mappedTLB[0])]))); // free the first page
+	  ker_pgdir[PDX(mappedTLB[0])] = 0;
+	}
+      mappedTLB[0] = 0;
+      mappedTLB[1] = 0;
+      break;
+    default:
+      panic("mappedTLBnumber error!");
+  }
+  mappedTLBnumber = 0;
+//    cprintf("clearTLB end\n");
+}

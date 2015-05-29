@@ -180,6 +180,9 @@ void            switchkvm(struct cpu*);
 int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *, char *);
 int		mappages(pde_t *, void *, uint, uint, int);
+//---------- TLB implementation ----------------
+int 		TLBMap(pde_t * proc_pgdir, pde_t * ker_pgdir, void* target_va);
+void 		clearTLB(pde_t * ker_pgdir);
 
 
 // number of elements in fixed-size array
