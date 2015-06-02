@@ -10,6 +10,11 @@ struct spinlock;
 struct stat;
 struct superblock;
 
+
+// number of physical avaliable pages
+uint avaliable_pysical_pages = 0;
+
+
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
@@ -68,7 +73,6 @@ char*           kalloc(void);
 void            kfree(char*);
 void            kinit1(void*, void*);
 void            kinit2(void*, void*);
-int 		get_avaliable_pysical_pages();
 
 // kbd.c
 void            kbdintr(void);

@@ -580,39 +580,37 @@ skipelem(char *path, char *name)
 {
   char *s;
   int len;
-  /*
   cprintf("skipelem WTF 0!!!!!\n");
   cprintf("skipelem WTF %x!!!!!\n", path);
   cprintf("skipelem WTF %x!!!!!\n", *path); 
   cprintf("skipelem WTF 0 TEST!!!!!\n");
-  */
   while(*path == '/') {
-//     cprintf("skipelem WTF 1!!!!!\n");
+    cprintf("skipelem WTF 1!!!!!\n");
     path++;
   }
-//   cprintf("skipelem WTF 2!!!!!\n");
+  cprintf("skipelem WTF 2!!!!!\n");
   if(*path == 0)
     return 0;
-//   cprintf("skipelem WTF 3!!!!!\n");
+  cprintf("skipelem WTF 3!!!!!\n");
   s = path;
-//   cprintf("skipelem WTF 4!!!!!\n");
+  cprintf("skipelem WTF 4!!!!!\n");
   while(*path != '/' && *path != 0) {
-//     cprintf("skipelem WTF 5!!!!!\n");
+    cprintf("skipelem WTF 5!!!!!\n");
     path++;
   }
-//   cprintf("skipelem WTF 6!!!!!\n");
+  cprintf("skipelem WTF 6!!!!!\n");
   len = path - s;
-//   cprintf("996663	WTF!!!!!\n");
+  cprintf("996663	WTF!!!!!\n");
   if(len >= DIRSIZ)
     memmove(name, s, DIRSIZ);
   else {
     memmove(name, s, len);
     name[len] = 0;
   }
-//   cprintf("996664	WTF!!!!!\n");
+  cprintf("996664	WTF!!!!!\n");
   while(*path == '/')
     path++;
-//   cprintf("996665	WTF!!!!!\n");
+  cprintf("996665	WTF!!!!!\n");
   return path;
 }
 
@@ -624,38 +622,38 @@ static struct inode*
 namex(char *path, int nameiparent, char *name)
 {
   struct inode *ip, *next;
-// cprintf("992	WTF!!!!!\n");
+cprintf("992	WTF!!!!!\n");
   if(*path == '/')
     ip = iget(ROOTDEV, ROOTINO);
   else
     ip = idup(proc->cwd);
-// cprintf("993	WTF!!!!!\n");
+cprintf("993	WTF!!!!!\n");
   while((path = skipelem(path, name)) != 0){
-//     cprintf("995	WTF!!!!!\n");
+    cprintf("995	WTF!!!!!\n");
     ilock(ip);
-//     cprintf("995.1	WTF!!!!!\n");
+    cprintf("995.1	WTF!!!!!\n");
     if(ip->type != T_DIR){
       iunlockput(ip);
       return 0;
     }
-//     cprintf("996	WTF!!!!!\n");
+    cprintf("996	WTF!!!!!\n");
     if(nameiparent && *path == '\0'){
       // Stop one level early.
       iunlock(ip);
       return ip;
     }
-//     cprintf("997	WTF!!!!!\n");
+    cprintf("997	WTF!!!!!\n");
     if((next = dirlookup(ip, name, 0)) == 0){
       iunlockput(ip);
       return 0;
     }
-//     cprintf("998	WTF!!!!!\n");
+    cprintf("998	WTF!!!!!\n");
     iunlockput(ip);
-//     cprintf("999	WTF!!!!!\n");
+    cprintf("999	WTF!!!!!\n");
     ip = next;
-//     cprintf("888	WTF!!!!!\n");
+    cprintf("888	WTF!!!!!\n");
   }
-//   cprintf("994	WTF!!!!!\n");
+  cprintf("994	WTF!!!!!\n");
   if(nameiparent){
     iput(ip);
     return 0;
@@ -667,7 +665,7 @@ struct inode*
 namei(char *path)
 {
   char name[DIRSIZ];
-//   cprintf("991	WTF!!!!!\n");
+  cprintf("991	WTF!!!!!\n");
   return namex(path, 0, name);
 }
 

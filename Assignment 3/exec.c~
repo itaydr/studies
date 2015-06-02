@@ -18,7 +18,7 @@ exec(char *path, char **argv)
   struct proghdr ph;
   pde_t *pgdir, *oldpgdir;
 
-//   cprintf("EXEC IS RUNNING!!!, path = %x\n", path);
+  cprintf("EXEC IS RUNNING!!!, path = %x\n", path);
   //cprintf("0	WTF!!!!!\n");
   
   begin_op();
@@ -61,9 +61,9 @@ exec(char *path, char **argv)
 //cprintf("\nd\n");
   // Allocate two pages at the next page boundary.
   // Make the first inaccessible.  Use the second as the user stack.
-//   cprintf("\n\n\ncurrent page of sz: %x\n", PGROUNDDOWN(sz));
+  cprintf("\n\n\ncurrent page of sz: %x\n", PGROUNDDOWN(sz));
   sz = PGROUNDUP(sz);
-//   cprintf("\n\n\naddress to guard: %x\n\n\n", sz);
+  cprintf("\n\n\naddress to guard: %x\n\n\n", sz);
   // TASK2 create fake mapping to page guard
   proc->guardPage = sz;
   sz += 1*PGSIZE;
@@ -74,7 +74,7 @@ exec(char *path, char **argv)
   //clearpteuTask2(pgdir, (char*)(sz - 2*PGSIZE));
   //clearpteu(pgdir, (char*)(sz - 2*PGSIZE));
   sp = sz;
-//   cprintf("\ninitial sp addr is: %x\n", sp);
+  cprintf("\ninitial sp addr is: %x\n", sp);
 //cprintf("\ne\n");
   // Push argument strings, prepare rest of stack in ustack.
   for(argc = 0; argv[argc]; argc++) {
@@ -113,7 +113,7 @@ exec(char *path, char **argv)
   //cprintf("\nj\n");
   freevm(oldpgdir);
   //cprintf("\nk\n");
-//   cprintf("EXEC IS DONE!!!\n");
+  cprintf("EXEC IS DONE!!!\n");
   return 0;
 
  bad:

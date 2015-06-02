@@ -434,25 +434,25 @@ mem(void)
   ppid = getpid();
   if((pid = fork()) == 0){
     m1 = 0;
-//     printf(1, "mem test - allocating...\n");
+    printf(1, "mem test - allocating...\n");
     while((m2 = malloc(10001)) != 0){
       *(char**)m2 = m1;
       m1 = m2;
     }
-//     printf(1, "mem test - freeing...\n");
+    printf(1, "mem test - freeing...\n");
     while(m1){
       m2 = *(char**)m1;
       free(m1);
       m1 = m2;
     }
-//     printf(1, "mem test - after whiles allocation...\n");
+    printf(1, "mem test - after whiles allocation...\n");
     m1 = malloc(1024*20);
     if(m1 == 0){
       printf(1, "couldn't allocate mem?!!\n");
       kill(ppid);
       exit();
     }
-//     printf(1, "mem test - after whiles going to free...\n");
+    printf(1, "mem test - after whiles going to free...\n");
     free(m1);
     printf(1, "mem ok\n");
     exit();

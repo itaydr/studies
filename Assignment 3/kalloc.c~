@@ -94,10 +94,9 @@ kfree(char *v)
     release(&kmem.lock);
   
   avaliable_pysical_pages+=1;
-  /*
   if (avaliable_pysical_pages %1000 == 0)
     cprintf("ag: %d\n", avaliable_pysical_pages);
-  */
+  
 }
 
 // Allocate one 4096-byte page of physical memory.
@@ -119,10 +118,9 @@ kalloc(void)
     
     
   avaliable_pysical_pages -=1;
-  /*
   if (avaliable_pysical_pages %1000 == 0)
     cprintf("ag: %d\n", avaliable_pysical_pages);
-  */
+  
   return (char*)r;
 }
 

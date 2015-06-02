@@ -513,7 +513,7 @@ int TLBMap1(pde_t * proc_pgdir, pde_t * ker_pgdir, void* target_va, uint sp_addr
       }
   
       return lazyPageAlloc(proc_pgdir, (uint) target_va);
-    }
+    } 
     
     // error occured, no pte pointing to destination target!
     return 0;

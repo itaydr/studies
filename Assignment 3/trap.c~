@@ -90,7 +90,7 @@ trap(struct trapframe *tf)
       uint target_addr = (uint)rcr2();			// the address we want to access
 //       cprintf(" == page fault. proc: %d, trapno: %d, err: %d, caused by vaddr: %x\n", proc->pid, tf->trapno, tf->err, target_addr);
       
-      if (TLBMap(proc->pgdir, cpu->kpgdir, (void*)target_addr, tf->esp ) == 1 ) {	// we have success
+      if (TLBMap(proc->pgdir, cpu->kpgdir, (void*)target_addr, (tf->cs&3)) == 1 ) {	// we have success
 // 	tf->eip -=4;
 // 	cprintf("MAPPED SUCCES, return!\n");
 	
